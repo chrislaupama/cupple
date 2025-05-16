@@ -53,13 +53,16 @@ export function useChat(sessionId: number, userId: string) {
     }
   }, [messageHistory]);
 
-  // Track messages being streamed
-  const [streamingMessages, setStreamingMessages] = useState<Record<number, string>>({});
+  // Track messages being streamed and streaming state
+  const [streamingMessages, setStreamingMessages] = useState<Record<string, string>>({});
+  const [isStreaming, setIsStreaming] = useState(false);
   
   // Setup WebSocket connection
   const { isConnected, sendMessage } = useWebSocket({
     userId,
     onMessage: (data) => {
+      console.log("WebSocket message received:", data);
+      
       // Handle regular messages
       if (data.type === "message" && data.message) {
         setMessages((prevMessages) => {
@@ -72,45 +75,54 @@ export function useChat(sessionId: number, userId: string) {
       }
       
       // Handle streaming message chunks
-      else if (data.type === "stream" && data.messageId) {
-        // Update the streaming content
-        setStreamingMessages(prev => ({
-          ...prev,
-          [data.messageId]: data.fullContent
-        }));
+      else if (data.type === "stream" && data.messageId !== undefined) {
+        setIsStreaming(true);
+        
+        // Update the streaming content with safe fallback
+        const fullContent = data.fullContent || "";
+        const messageId = data.messageId;
         
         // Check if this message exists in our messages array
         setMessages(prevMessages => {
-          const exists = prevMessages.some(msg => msg.id === data.messageId);
+          const exists = prevMessages.some(msg => msg.id === messageId);
           
           if (exists) {
             // Update existing message
             return prevMessages.map(msg => 
-              msg.id === data.messageId 
-                ? { ...msg, content: data.fullContent }
+              msg.id === messageId 
+                ? { ...msg, content: fullContent }
                 : msg
             );
           } else {
-            // Add new streaming message
-            return [...prevMessages, {
-              id: data.messageId,
+            // Add new streaming message with guaranteed numeric ID
+            const newMessage: Message = {
+              id: messageId as number, // We know it's a number from the server
               sessionId: sessionId,
               isAi: true,
-              content: data.fullContent,
+              content: fullContent,
               createdAt: new Date().toISOString(),
               sender: {
                 id: "ai",
                 name: "Dr. AI Therapist"
               }
-            }];
+            };
+            return [...prevMessages, newMessage];
           }
         });
       }
       
-      // Handle stream complete notification (for secondary clients in couples therapy)
-      else if (data.type === "stream_complete" && data.sessionId === sessionId) {
-        // Fetch updated messages to get the complete message
-        queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}/messages`] });
+      // Handle stream complete notification
+      else if (data.type === "stream_complete" || data.type === "stream_end") {
+        setIsStreaming(false);
+        
+        // If sessionId matches current session, update messages
+        if (data.sessionId === sessionId) {
+          console.log("Stream complete for session:", sessionId);
+          // Wait a moment before refetching to make sure the database is updated
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}/messages`] });
+          }, 500);
+        }
       }
     },
     onConnected: () => {

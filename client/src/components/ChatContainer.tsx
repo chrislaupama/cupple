@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChatMessage } from "@/components/ChatMessage";
@@ -241,6 +241,18 @@ function ChatHeader({ session, type }: { session: Session, type: "couples" | "pr
 }
 
 function ChatMessageList({ messages, userId }: { messages: Message[], userId: string }) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+  
+  // Function to scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="mx-auto w-full max-w-4xl">
       {messages.map((message) => (
@@ -252,6 +264,8 @@ function ChatMessageList({ messages, userId }: { messages: Message[], userId: st
           isAi={message.isAi}
         />
       ))}
+      {/* Empty div for scrolling to bottom */}
+      <div ref={messagesEndRef} />
     </div>
   );
 }
