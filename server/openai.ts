@@ -20,14 +20,22 @@ export async function generateAIResponse(
     // Create the system prompt based on therapy type
     const systemPrompt = getSystemPrompt(type);
     
-    // Format messages for the OpenAI API
-    const formattedMessages = [
-      { role: "system" as const, content: systemPrompt },
-      ...messages.map(msg => ({
-        role: (msg.role === "assistant" ? "assistant" : "user") as "assistant" | "user",
-        content: msg.content
-      }))
+    // Format messages for the OpenAI API - ensuring the format is exactly what OpenAI expects
+    const formattedMessages: Array<{role: "system" | "user" | "assistant", content: string}> = [
+      { role: "system", content: systemPrompt }
     ];
+    
+    // Make sure messages are properly formatted with correct roles
+    for (const msg of messages) {
+      const safeContent = msg.content || ""; 
+      if (msg.role === "assistant") {
+        formattedMessages.push({ role: "assistant", content: safeContent });
+      } else {
+        formattedMessages.push({ role: "user", content: safeContent });
+      }
+    }
+    
+    console.log("Formatted messages for OpenAI:", JSON.stringify(formattedMessages));
     
     // Call the OpenAI API
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024

@@ -260,9 +260,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Return the current message content and done status
+      // Consider the message complete if:
+      // 1. It has content (not empty)
+      // 2. It's not just "Thinking..." or "..."
+      // 3. It doesn't end with ellipsis
+      const isThinking = message.content === "Thinking..." || message.content === "...";
+      const isComplete = message.content.length > 0 && 
+                         !isThinking && 
+                         !message.content.endsWith("...");
+      
       res.json({
         content: message.content,
-        isComplete: message.content.length > 0 && !message.content.endsWith("...")
+        isComplete: isComplete
       });
     } catch (error) {
       console.error("Error fetching message stream:", error);
@@ -273,30 +282,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Function to generate AI responses using OpenAI
   async function handleAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
+      // Import the simpler therapy response generator
+      const { generateTherapyResponse } = await import('./gpt');
+      
       // Show initial loading state
       await storage.updateMessage(messageId, "Thinking...");
       
-      // Format messages for the OpenAI API
-      const formattedMessages = messages.map(msg => ({
-        role: msg.role === "assistant" ? "assistant" : "user",
-        content: msg.content
-      }));
+      // Get the last user message to respond to
+      const lastUserMessage = messages
+        .filter(msg => msg.role !== "assistant")
+        .pop()?.content || "Hello";
       
-      try {
-        // Call the OpenAI API to generate a response
-        const aiResponse = await generateAIResponse(formattedMessages, type);
-        
-        // Update the message with the AI-generated response
-        await storage.updateMessage(messageId, aiResponse);
-        
-        // Update session's last activity time
-        await storage.updateSessionLastActivity(sessionId);
-        
-        console.log("AI response complete for message: " + messageId);
-      } catch (aiError) {
-        console.error("Error from OpenAI API:", aiError);
-        await storage.updateMessage(messageId, "I apologize, but I'm having trouble generating a response right now. Please try again shortly.");
-      }
+      // Generate therapy response with our simpler approach
+      const aiResponse = await generateTherapyResponse(
+        lastUserMessage, 
+        type as "couples" | "private"
+      );
+      
+      // Update the message with the AI-generated response
+      await storage.updateMessage(messageId, aiResponse);
+      
+      // Update session's last activity time
+      await storage.updateSessionLastActivity(sessionId);
+      
+      console.log("AI response complete for message: " + messageId);
     } catch (error) {
       console.error("Error in AI response handling:", error);
       await storage.updateMessage(messageId, "I'm sorry, I'm having trouble responding right now. Let's try again in a moment.");

@@ -158,17 +158,22 @@ export function useChat(sessionId: number, userId: string) {
   const startMessagePolling = (messageId: number) => {
     let intervalId: NodeJS.Timeout;
     let previousContent = "";
+    let attempts = 0;
+    const maxAttempts = 40; // About 12 seconds of polling before giving up
     
     setIsStreaming(true);
     
     const pollMessage = async () => {
       try {
+        attempts++;
         const response = await fetch(`/api/messages/${messageId}/stream`);
         const data = await response.json();
         
-        if (data.content !== previousContent) {
+        // If we have an actual message (not just "Thinking...")
+        if (data.content !== previousContent && data.content !== "Thinking...") {
           previousContent = data.content;
           
+          // Update message in the UI
           setMessages(prevMessages => 
             prevMessages.map(msg => 
               msg.id === messageId 
@@ -176,16 +181,40 @@ export function useChat(sessionId: number, userId: string) {
                 : msg
             )
           );
+          
+          // Message is complete when it has content and isn't just "Thinking..."
+          if (data.content && data.content !== "Thinking..." && data.isComplete) {
+            console.log("Message complete, stopping polling");
+            clearInterval(intervalId);
+            setIsStreaming(false);
+          }
         }
         
-        if (data.isComplete) {
+        // If we've been polling for too long, stop
+        if (attempts >= maxAttempts) {
+          console.log("Max polling attempts reached, stopping");
           clearInterval(intervalId);
           setIsStreaming(false);
+          
+          // If we didn't get a real response, show a fallback message
+          if (data.content === "Thinking..." || !data.content) {
+            setMessages(prevMessages => 
+              prevMessages.map(msg => 
+                msg.id === messageId 
+                  ? { ...msg, content: "I'm having trouble connecting right now. Please try again in a moment." }
+                  : msg
+              )
+            );
+          }
         }
       } catch (error) {
         console.error("Error polling message:", error);
-        clearInterval(intervalId);
-        setIsStreaming(false);
+        attempts += 5; // Increase attempts faster on error
+        
+        if (attempts >= maxAttempts) {
+          clearInterval(intervalId);
+          setIsStreaming(false);
+        }
       }
     };
     
