@@ -46,15 +46,13 @@ export function MobileNav() {
     }
   });
 
-  // Handle clicks directly instead of using links
+  // Handle clicks to navigate to filtered session lists
   const handleCouplesClick = () => {
-    // Always create new session when clicked
-    createSession.mutate("couples");
+    window.location.href = "/couples";
   };
 
   const handlePrivateClick = () => {
-    // Always create new session when clicked
-    createSession.mutate("private");
+    window.location.href = "/private";
   };
 
   return (
