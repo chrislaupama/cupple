@@ -98,11 +98,29 @@ export function setupWebSocketServer(server: Server) {
           // Get the first recipient's client for streaming
           const streamClient = clients.get(messageRecipients[0]);
           
-          // Generate AI response
-          const aiResponse = await generateAIResponse(
-            formattedMessages, 
-            session.type
+          // Generate AI response with streaming
+          await getSimpleTherapyResponse(
+            message.content,
+            session.type,
+            (chunk) => {
+              if (streamClient && streamClient.readyState === WebSocket.OPEN) {
+                streamClient.send(JSON.stringify({
+                  type: "stream",
+                  messageId: savedMessage.id,
+                  content: chunk
+                }));
+              }
+            }
           );
+          
+          // Send stream complete notification
+          if (streamClient && streamClient.readyState === WebSocket.OPEN) {
+            streamClient.send(JSON.stringify({
+              type: "stream_complete",
+              messageId: savedMessage.id,
+              sessionId: session.id
+            }));
+          }
           
           console.log("AI response generated:", aiResponse);
           

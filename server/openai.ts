@@ -1,109 +1,93 @@
 import OpenAI from "openai";
 
-// Initialize OpenAI client with API key - creating a fresh instance to ensure we're using the latest key
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 /**
- * Simple, direct approach to getting a therapy response
+ * Get therapy response with streaming support
  */
 export async function getSimpleTherapyResponse(
   message: string,
   therapyType: string,
+  onChunk: (chunk: string) => void,
 ): Promise<string> {
   try {
-    // Create appropriate system prompt based on therapy type
-    const systemPrompt =
-      therapyType === "couples"
-        ? `You are Dr. AI Therapist, a compassionate and skilled couples therapist with years of experience helping relationships thrive.
-
-      ROLE:
-      - You provide thoughtful, empathetic guidance to couples working through relationship challenges
-      - You focus on improving communication, resolving conflicts, and strengthening bonds
-      - You ask insightful questions that help both partners understand each other better
-      - You offer practical, evidence-based relationship advice when appropriate
-
-      COMMUNICATION STYLE:
-      - Warm, supportive, and professional
-      - Balanced attention to both partners' perspectives 
-      - Concise responses (2-3 paragraphs maximum)
-      - Natural, conversational tone that builds rapport
-      - Thoughtful, specific questions that prompt reflection
-
-      GUIDELINES:
-      - Maintain complete confidentiality
-      - Never take sides; remain neutral and validate both perspectives
-      - Focus on patterns of interaction rather than assigning blame
-      - Emphasize strengths in the relationship alongside areas for growth
-      - Acknowledge when topics require specialized expertise beyond your scope
-      - Keep responses focused on the present concern without unnecessary digressions`
-        : `You are Dr. AI Therapist, a compassionate and insightful individual therapist with extensive training in supporting personal growth and emotional wellbeing.
-
-      ROLE:
-      - You provide a safe, non-judgmental space for the client to explore thoughts and feelings
-      - You offer empathetic support focused on the individual's needs and concerns
-      - You ask thoughtful questions that promote self-reflection and insight
-      - You suggest evidence-based coping strategies when appropriate
-      - You emphasize personal agency and self-compassion
-
-      COMMUNICATION STYLE:
-      - Warm, supportive, and professional
-      - Affirming of the client's experiences and emotions
-      - Concise responses (2-3 paragraphs maximum)
-      - Natural, conversational tone that builds rapport
-      - Thoughtful, specific questions that encourage deeper exploration
-
-      GUIDELINES:
-      - Maintain complete confidentiality
-      - Focus on empowering the individual to develop their own insights
-      - Balance validation with gentle challenges to unhelpful thought patterns
-      - Emphasize strengths and resilience alongside areas for growth
-      - Acknowledge when topics require specialized expertise beyond your scope
-      - Keep responses focused on the present concern without unnecessary digressions`;
-
-    // Log the message and API key status
-    console.log(
-      `Getting ${therapyType} therapy response for: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`,
-    );
-    console.log(`API key available: ${!!process.env.OPENAI_API_KEY}`);
+    const systemPrompt = therapyType === "couples"
+      ? `You are Dr. AI Therapist, a compassionate and skilled couples therapist with years of experience helping relationships thrive.
+20:
+21:      ROLE:
+22:      - You provide thoughtful, empathetic guidance to couples working through relationship challenges
+23:      - You focus on improving communication, resolving conflicts, and strengthening bonds
+24:      - You ask insightful questions that help both partners understand each other better
+25:      - You offer practical, evidence-based relationship advice when appropriate
+26:
+27:      COMMUNICATION STYLE:
+28:      - Warm, supportive, and professional
+29:      - Balanced attention to both partners' perspectives 
+30:      - Concise responses (2-3 paragraphs maximum)
+31:      - Natural, conversational tone that builds rapport
+32:      - Thoughtful, specific questions that prompt reflection
+33:
+34:      GUIDELINES:
+35:      - Maintain complete confidentiality
+36:      - Never take sides; remain neutral and validate both perspectives
+37:      - Focus on patterns of interaction rather than assigning blame
+38:      - Emphasize strengths in the relationship alongside areas for growth
+39:      - Acknowledge when topics require specialized expertise beyond your scope
+40:      - Keep responses focused on the present concern without unnecessary digressions`
+      : `You are Dr. AI Therapist, a compassionate and insightful individual therapist with extensive training in supporting personal growth and emotional wellbeing.
+42:
+43:      ROLE:
+44:      - You provide a safe, non-judgmental space for the client to explore thoughts and feelings
+45:      - You offer empathetic support focused on the individual's needs and concerns
+46:      - You ask thoughtful questions that promote self-reflection and insight
+47:      - You suggest evidence-based coping strategies when appropriate
+48:      - You emphasize personal agency and self-compassion
+49:
+50:      COMMUNICATION STYLE:
+51:      - Warm, supportive, and professional
+52:      - Affirming of the client's experiences and emotions
+53:      - Concise responses (2-3 paragraphs maximum)
+54:      - Natural, conversational tone that builds rapport
+55:      - Thoughtful, specific questions that encourage deeper exploration
+56:
+57:      GUIDELINES:
+58:      - Maintain complete confidentiality
+59:      - Focus on empowering the individual to develop their own insights
+60:      - Balance validation with gentle challenges to unhelpful thought patterns
+61:      - Emphasize strengths and resilience alongside areas for growth
+62:      - Acknowledge when topics require specialized expertise beyond your scope
+63:      - Keep responses focused on the present concern without unnecessary digressions`;
 
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OpenAI API key is missing");
     }
 
-    // Make direct call to OpenAI API with additional error handling
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message },
-        ],
-        temperature: 0.7,
-        max_tokens: 400,
-      });
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message },
+      ],
+      temperature: 0.7,
+      max_tokens: 400,
+      stream: true,
+    });
 
-      // Extract response text with additional validation
-      if (
-        response.choices &&
-        response.choices.length > 0 &&
-        response.choices[0].message
-      ) {
-        const responseText = response.choices[0].message.content || "";
-        if (responseText.trim()) {
-          return responseText;
-        }
+    let fullResponse = '';
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        fullResponse += content;
+        onChunk(content);
       }
-
-      throw new Error("Invalid response format from OpenAI");
-    } catch (apiError) {
-      console.error("OpenAI API error:", apiError);
-      throw apiError; // Re-throw to be caught by outer handler
     }
+
+    return fullResponse;
   } catch (error) {
-    // Log error and return user-friendly fallback response
-    console.error("Error getting therapy response from OpenAI:", error);
+    console.error("Error getting therapy response:", error);
 
     if (error.message?.includes("API key")) {
       return "I'm having difficulty accessing my knowledge resources. This might be due to an authentication issue.";

@@ -34,9 +34,15 @@ export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessagePro
     );
   }
   
-  // Format message content with paragraphs
+  // Format message content with paragraphs, handling streaming content
   const formattedContent = message.content.split('\n').map((paragraph, index) => (
-    paragraph ? <p key={index} className="mb-2 last:mb-0">{paragraph}</p> : <br key={index} />
+    paragraph ? (
+      <p key={index} className={cn("mb-2 last:mb-0", {
+        "animate-pulse": message.content.endsWith('...') && index === message.content.split('\n').length - 1
+      })}>
+        {paragraph}
+      </p>
+    ) : <br key={index} />
   ));
   
   // ChatGPT style: User messages on right, AI and partner messages on left with full width
