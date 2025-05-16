@@ -187,18 +187,45 @@ export function setupWebSocketServer(server: Server) {
           // Get client for streaming
           const streamClient = clients.get(session.creatorId);
 
-          // Generate AI response for private therapy
+          // Generate AI response for private therapy with streaming
           console.log("Starting AI response generation for private therapy");
-          const aiResponse = await generateAIResponse(
-            formattedMessages, 
-            "private"
-          );
-
-          // Save the AI message to database
+          
+          // Create initial empty AI message
           const aiMessage = await storage.createMessage({
             sessionId: message.sessionId,
             isAi: true,
-            content: aiResponse
+            content: ""
+          });
+
+          // Get recipients for streaming
+          const streamClient = clients.get(session.creatorId);
+          
+          // Generate AI response with streaming
+          await getSimpleTherapyResponse(
+            message.content,
+            session.type,
+            (chunk) => {
+              if (streamClient && streamClient.readyState === WebSocket.OPEN) {
+                streamClient.send(JSON.stringify({
+                  type: "stream",
+                  messageId: aiMessage.id,
+                  content: chunk
+                }));
+              }
+            }
+          ).then(async (fullResponse) => {
+            // Update the message in database with full response
+            await storage.updateMessage(aiMessage.id, fullResponse);
+            
+            // Send stream complete notification
+            if (streamClient && streamClient.readyState === WebSocket.OPEN) {
+              streamClient.send(JSON.stringify({
+                type: "stream_complete",
+                messageId: aiMessage.id,
+                sessionId: message.sessionId,
+                fullContent: fullResponse
+              }));
+            }
           });
 
           // Send the message to the client
