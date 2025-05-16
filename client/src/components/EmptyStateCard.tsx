@@ -17,19 +17,32 @@ export function EmptyStateCard() {
       setIsLoading(true);
       
       try {
+        console.log(`Creating new ${type} session...`);
         const response = await apiRequest("POST", "/api/sessions", {
           title: `${type === "private" ? "Private" : "Couples"} Session 1`,
           type,
         });
+        
+        // Check if the response is OK
+        if (!response.ok) {
+          throw new Error(`Failed to create session: ${response.status} ${response.statusText}`);
+        }
+        
         const data = await response.json();
         return data;
+      } catch (error) {
+        console.error("Error creating session:", error);
+        throw error;
       } finally {
         setIsLoading(false);
       }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      setLocation(`/session/${data.id}`);
+      
+      // Use direct URL change instead of location setter
+      // This ensures it works consistently on mobile
+      window.location.href = `/session/${data.id}`;
       
       toast({
         title: "Session created",

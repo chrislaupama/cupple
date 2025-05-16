@@ -8,6 +8,9 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Welcome from "@/pages/Welcome";
 import Settings from "@/pages/Settings";
+import CouplesTherapy from "@/pages/CouplesTherapy";
+import PrivateTherapy from "@/pages/PrivateTherapy";
+import { useAuth } from "@/hooks/useAuth";
 
 function Router() {
   return (
