@@ -23,7 +23,7 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
   // Fetch existing private therapy sessions
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["/api/sessions"],
-    select: (data) => data?.filter((session: any) => session.type === "private") || [],
+    select: (data) => Array.isArray(data) ? data.filter((session: any) => session.type === "private") : [],
   });
   
   // Create new session mutation
@@ -88,7 +88,7 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create Private Therapy Session</DialogTitle>
+                  <DialogTitle>Create Private Session</DialogTitle>
                   <DialogDescription>
                     Your private sessions are confidential and not shared with your partner.
                   </DialogDescription>

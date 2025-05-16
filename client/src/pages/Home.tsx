@@ -21,7 +21,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="flex h-screen justify-center items-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-foreground/30 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -40,14 +40,14 @@ export default function Home() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Tabs defaultValue="couples" className="flex-1 flex flex-col">
             <TabsList className="md:hidden mx-4 mt-2 justify-center">
-              <TabsTrigger value="couples" className="flex-1">Couples Therapy</TabsTrigger>
-              <TabsTrigger value="private" className="flex-1">Private Therapy</TabsTrigger>
+              <TabsTrigger value="couples" className="flex-1">Couples</TabsTrigger>
+              <TabsTrigger value="private" className="flex-1">Private</TabsTrigger>
             </TabsList>
             <TabsContent value="couples" className="flex-1 p-0 m-0">
-              <CouplesTherapy userId={user.id} />
+              <CouplesTherapy userId={(user as any)?.id || ""} />
             </TabsContent>
             <TabsContent value="private" className="flex-1 p-0 m-0">
-              <PrivateTherapy userId={user.id} />
+              <PrivateTherapy userId={(user as any)?.id || ""} />
             </TabsContent>
           </Tabs>
         </div>

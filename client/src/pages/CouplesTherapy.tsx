@@ -24,7 +24,7 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
   // Fetch existing couple therapy sessions
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["/api/sessions"],
-    select: (data) => data?.filter((session: any) => session.type === "couples") || [],
+    select: (data) => Array.isArray(data) ? data.filter((session: any) => session.type === "couples") : [],
   });
   
   // Create new session mutation
@@ -89,9 +89,9 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create New Therapy Session</DialogTitle>
+                  <DialogTitle>Create New Session</DialogTitle>
                   <DialogDescription>
-                    Give your therapy session a title to help you remember its focus.
+                    Give your session a title to help you remember its focus.
                   </DialogDescription>
                 </DialogHeader>
                 
