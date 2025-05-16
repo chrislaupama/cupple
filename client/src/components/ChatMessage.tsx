@@ -12,7 +12,6 @@ type ChatMessageProps = {
 
 export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessageProps) {
   let avatarContent;
-  let nameBadge;
   
   if (isAi) {
     avatarContent = (
@@ -20,7 +19,6 @@ export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessagePro
         <Brain className="h-4 w-4" />
       </div>
     );
-    nameBadge = "AI Therapist";
   } else if (isUser) {
     avatarContent = (
       <Avatar className="h-8 w-8">
@@ -28,49 +26,47 @@ export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessagePro
         <AvatarFallback>U</AvatarFallback>
       </Avatar>
     );
-    nameBadge = "You";
   } else if (isPartner) {
     avatarContent = (
       <Avatar className="h-8 w-8">
         <AvatarFallback>P</AvatarFallback>
       </Avatar>
     );
-    nameBadge = message.sender?.name || "Partner";
   }
   
   // Format message content with paragraphs
   const formattedContent = message.content.split('\n').map((paragraph, index) => (
-    paragraph ? <p key={index}>{paragraph}</p> : <br key={index} />
+    paragraph ? <p key={index} className="mb-2 last:mb-0">{paragraph}</p> : <br key={index} />
   ));
   
-  return (
-    <div className={cn(
-      "flex items-start",
-      isUser && "justify-end"
-    )}>
-      {!isUser && (
-        <div className="mr-3 flex-shrink-0">
-          {avatarContent}
+  // ChatGPT style: User messages on right, AI and partner messages on left with full width
+  if (isUser) {
+    return (
+      <div className="px-4 py-6 md:px-6 lg:px-8 flex justify-end">
+        <div className="max-w-[80%] md:max-w-[70%]">
+          <div className="px-4 py-2 rounded-lg bg-primary text-primary-foreground">
+            {formattedContent}
+          </div>
         </div>
-      )}
+      </div>
+    );
+  }
+  
+  // AI or partner message (left-aligned, full width container but content is limited)
+  const senderName = isAi ? "AI Therapist" : (message.sender?.name || "Partner");
+  
+  return (
+    <div className="px-4 py-6 md:px-6 lg:px-8 flex">
+      <div className="mr-4 flex-shrink-0 mt-1">
+        {avatarContent}
+      </div>
       
-      <div className={cn(
-        "rounded-lg p-4 max-w-[80%] shadow-sm",
-        isUser ? "bg-primary text-primary-foreground" : "bg-muted"
-      )}>
-        <p className="font-semibold text-sm">
-          {nameBadge}
-        </p>
-        <div className="mt-1 space-y-2">
+      <div className="max-w-[85%] md:max-w-[80%]">
+        <div className="text-sm font-medium mb-1">{senderName}</div>
+        <div className="space-y-1">
           {formattedContent}
         </div>
       </div>
-      
-      {isUser && (
-        <div className="ml-3 flex-shrink-0">
-          {avatarContent}
-        </div>
-      )}
     </div>
   );
 }

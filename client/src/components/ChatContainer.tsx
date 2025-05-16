@@ -40,9 +40,21 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-muted/30 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-background overflow-hidden">
       <ChatHeader session={typedSession} type={chatType} />
-      <ChatMessageList messages={messages} userId={userId} />
+      <div className="flex-1 overflow-y-auto">
+        <ChatMessageList messages={messages} userId={userId} />
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full py-8 px-4 text-center">
+            <p className="text-lg font-medium mb-2">Start a conversation</p>
+            <p className="text-muted-foreground max-w-md">
+              {chatType === "private" 
+                ? "Begin your private therapy session. Your messages are confidential." 
+                : "Begin your couples therapy session. Share and grow together."}
+            </p>
+          </div>
+        )}
+      </div>
       <ChatInput onSendMessage={handleSendMessage} isPrivate={chatType === "private"} />
     </div>
   );
@@ -50,78 +62,88 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
 
 function ChatHeader({ session, type }: { session: Session, type: "couples" | "private" }) {
   return (
-    <div className="border-b p-4 bg-background shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="border-b py-3 px-4 md:px-6 bg-background shadow-sm">
+      <div className="flex items-center justify-between max-w-4xl mx-auto">
         <div className="flex items-center">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-base font-medium truncate max-w-[260px] md:max-w-xs">
             {session.title || (type === "couples" ? "Couples Session" : "Private Session")}
           </h2>
           <Badge 
             variant="outline" 
-            className="ml-3"
+            className="ml-2"
           >
-            {type === "couples" ? "Active" : "Private"}
+            {type === "couples" ? "Couples" : "Private"}
           </Badge>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button size="icon" variant="ghost">
-            <MoreVertical className="h-5 w-5" />
+        <div className="flex items-center">
+          <Button size="sm" variant="ghost" className="h-8 w-8">
+            <MoreVertical className="h-4 w-4" />
           </Button>
         </div>
       </div>
-      <p className="text-sm text-muted-foreground mt-1">
-        With AI Therapist • {type === "private" ? "Your partner cannot see these messages" : "Started recently"}
-      </p>
     </div>
   );
 }
 
 function ChatMessageList({ messages, userId }: { messages: Message[], userId: string }) {
   return (
-    <ScrollArea className="flex-1 p-4 overflow-y-auto">
-      <div className="space-y-4">
-        {messages.map((message) => (
-          <ChatMessage
-            key={message.id}
-            message={message}
-            isUser={message.senderId === userId}
-            isPartner={message.senderId !== userId && !message.isAi}
-            isAi={message.isAi}
-          />
-        ))}
-      </div>
-    </ScrollArea>
+    <div className="mx-auto w-full max-w-4xl">
+      {messages.map((message) => (
+        <ChatMessage
+          key={message.id}
+          message={message}
+          isUser={message.senderId === userId}
+          isPartner={message.senderId !== userId && !message.isAi}
+          isAi={message.isAi}
+        />
+      ))}
+    </div>
   );
 }
 
 function ChatSkeleton() {
   return (
-    <div className="flex-1 flex flex-col bg-muted/30 overflow-hidden">
-      <div className="border-b border-border p-4 bg-background">
-        <Skeleton className="h-7 w-64 mb-2" />
-        <Skeleton className="h-4 w-40" />
-      </div>
-      
-      <div className="flex-1 p-4 space-y-4">
-        <div className="flex items-start">
-          <Skeleton className="h-8 w-8 rounded-full mr-3" />
-          <Skeleton className="h-24 w-3/4 rounded-lg" />
-        </div>
-        
-        <div className="flex items-start justify-end">
-          <Skeleton className="h-16 w-2/3 rounded-lg" />
-          <Skeleton className="h-8 w-8 rounded-full ml-3" />
-        </div>
-        
-        <div className="flex items-start">
-          <Skeleton className="h-8 w-8 rounded-full mr-3" />
-          <Skeleton className="h-32 w-3/4 rounded-lg" />
+    <div className="flex-1 flex flex-col bg-background overflow-hidden">
+      <div className="border-b py-3 px-4 md:px-6 bg-background shadow-sm">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-5 w-16 ml-2" />
+          </div>
         </div>
       </div>
       
-      <div className="border-t border-border p-4 bg-background">
-        <Skeleton className="h-24 w-full rounded-lg" />
+      <div className="flex-1 overflow-y-auto py-4">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="px-4 py-6 md:px-6 lg:px-8 flex">
+            <Skeleton className="h-8 w-8 rounded-full mr-4 flex-shrink-0" />
+            <div className="space-y-2 max-w-[80%]">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-24 w-full rounded-md" />
+            </div>
+          </div>
+          
+          <div className="px-4 py-6 md:px-6 lg:px-8 flex justify-end">
+            <div className="max-w-[80%] md:max-w-[70%]">
+              <Skeleton className="h-16 w-full rounded-md" />
+            </div>
+          </div>
+          
+          <div className="px-4 py-6 md:px-6 lg:px-8 flex">
+            <Skeleton className="h-8 w-8 rounded-full mr-4 flex-shrink-0" />
+            <div className="space-y-2 max-w-[80%]">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-32 w-full rounded-md" />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="relative border-t p-4 md:p-6 bg-background">
+        <div className="mx-auto max-w-4xl">
+          <Skeleton className="h-12 w-full rounded-xl" />
+        </div>
       </div>
     </div>
   );

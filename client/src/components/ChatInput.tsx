@@ -35,28 +35,42 @@ export function ChatInput({ onSendMessage, isPrivate }: ChatInputProps) {
   }, [message]);
 
   return (
-    <div className="border-t p-4 bg-background">
-      <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
-        <div className="flex-1 bg-muted rounded-lg p-3 focus-within:ring-1 focus-within:ring-ring">
+    <div className="relative border-t p-4 md:p-6 bg-background">
+      <form onSubmit={handleSendMessage} className="mx-auto max-w-4xl">
+        <div className="relative flex items-center rounded-xl border shadow-sm bg-background focus-within:ring-1 focus-within:ring-ring">
           <Textarea
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full bg-transparent resize-none focus:outline-none min-h-[80px]"
-            placeholder="Type your message..."
-            rows={2}
+            className="flex-1 resize-none border-0 bg-transparent px-3 py-2.5 focus-visible:ring-0 min-h-[52px] max-h-[200px]"
+            placeholder="Ask anything..."
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage(e);
+              }
+            }}
           />
-          <div className="flex justify-end items-center mt-2">
-            {isPrivate && (
-              <Badge variant="outline">
-                Private Message
+          {isPrivate && (
+            <div className="flex-shrink-0 px-2">
+              <Badge variant="outline" className="mr-2">
+                Private
               </Badge>
-            )}
+            </div>
+          )}
+          <div className="flex-shrink-0 px-3">
+            <Button 
+              type="submit" 
+              size="icon" 
+              variant="ghost" 
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              disabled={!message.trim()}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-        <Button type="submit" size="icon">
-          <Send className="h-4 w-4" />
-        </Button>
       </form>
     </div>
   );
