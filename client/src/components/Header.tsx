@@ -16,18 +16,18 @@ export function Header() {
 
   const getInitials = () => {
     if (!user) return "U";
-    const firstName = user.firstName || "";
-    const lastName = user.lastName || "";
+    const firstName = (user as any)?.firstName || "";
+    const lastName = (user as any)?.lastName || "";
     return `${firstName.charAt(0)}${lastName.charAt(0)}` || "U";
   };
 
-  const displayName = user ? (user.firstName || "") + " " + (user.lastName || "") : "User";
+  const displayName = user ? ((user as any)?.firstName || "") + " " + ((user as any)?.lastName || "") : "User";
   
   return (
-    <header className="border-b border-gray-200 dark:border-gray-800 bg-background py-4 px-6 flex items-center justify-between shadow-sm">
+    <header className="border-b bg-background py-4 px-6 flex items-center justify-between shadow-sm">
       <div className="flex items-center">
         <Link href="/">
-          <h1 className="text-xl font-mono font-semibold cursor-pointer">ConnectTherapy</h1>
+          <h1 className="text-xl font-semibold cursor-pointer">cupple</h1>
         </Link>
       </div>
       
@@ -37,7 +37,6 @@ export function Header() {
           variant="ghost" 
           size="icon"
           onClick={toggleTheme} 
-          className="rounded-full"
         >
           {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </Button>
@@ -48,7 +47,7 @@ export function Header() {
               <Button variant="ghost" className="flex items-center space-x-2 focus:outline-none">
                 <Avatar>
                   <AvatarImage 
-                    src={user?.profileImageUrl || undefined} 
+                    src={(user as any)?.profileImageUrl || undefined} 
                     alt={displayName} 
                   />
                   <AvatarFallback>{getInitials()}</AvatarFallback>

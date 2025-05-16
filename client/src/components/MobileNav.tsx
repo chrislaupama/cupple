@@ -6,7 +6,7 @@ export function MobileNav() {
   const [location] = useLocation();
 
   return (
-    <nav className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-background py-2">
+    <nav className="md:hidden border-t bg-background py-2">
       <div className="grid grid-cols-3 gap-1">
         <Link href="/couples">
           <a className={cn(

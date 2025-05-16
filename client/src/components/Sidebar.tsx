@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Calendar, MessageCircle, HelpCircle, Settings, Users, User, Home } from "lucide-react";
+import { Calendar, HelpCircle, Settings, Users, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -30,17 +30,17 @@ export function Sidebar() {
   };
 
   return (
-    <nav className="hidden md:block w-64 border-r border-gray-200 dark:border-gray-800 p-4 overflow-y-auto bg-background">
+    <nav className="hidden md:block w-64 border-r p-4 overflow-y-auto bg-background">
       <div className="mb-8">
-        <h2 className="text-xs uppercase font-mono tracking-wider text-muted-foreground mb-3">Session Types</h2>
+        <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Session Types</h2>
         <div className="space-y-1">
           <Link href="/couples">
             <Button
               variant={location === "/couples" ? "secondary" : "ghost"}
-              className={cn("w-full justify-start", location === "/couples" && "bg-primary/10 text-primary dark:text-primary/90 hover:bg-primary/20")}
+              className="w-full justify-start"
             >
               <Users className="mr-2 h-4 w-4" />
-              <span>Couples Therapy</span>
+              <span>Couples</span>
             </Button>
           </Link>
           <Link href="/private">
@@ -49,15 +49,15 @@ export function Sidebar() {
               className="w-full justify-start"
             >
               <User className="mr-2 h-4 w-4" />
-              <span>Private Therapy</span>
+              <span>Private</span>
             </Button>
           </Link>
         </div>
       </div>
       
-      {sessions && sessions.length > 0 && (
+      {sessions && Array.isArray(sessions) && sessions.length > 0 && (
         <div>
-          <h2 className="text-xs uppercase font-mono tracking-wider text-muted-foreground mb-3">Recent Sessions</h2>
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Recent Sessions</h2>
           <div className="space-y-1">
             {sessions.slice(0, 5).map((session: SessionType) => (
               <Link href={`/session/${session.id}`} key={session.id}>
