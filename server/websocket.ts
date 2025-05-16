@@ -98,39 +98,39 @@ export function setupWebSocketServer(server: Server) {
           // Get the first recipient's client for streaming
           const streamClient = clients.get(messageRecipients[0]);
           
-          // Generate streaming response
-          const aiResponse = await generateTherapistResponse(
+          // Generate AI response
+          const aiResponse = await generateAIResponse(
             formattedMessages, 
-            "couples",
-            streamClient,
-            message.sessionId,
-            true
+            session.type
           );
           
           console.log("AI response generated:", aiResponse);
           
-          // No need to save message here as it's done in the streaming function
+          // Save the AI message in the database
+          const savedMessage = await storage.createMessage({
+            sessionId: message.sessionId,
+            isAi: true,
+            content: aiResponse
+          });
           
-          // Note: The streaming response is already being sent to the first recipient
-          // If there are multiple recipients (couples therapy), send completion messages to all other recipients
-          if (messageRecipients.length > 1) {
-            console.log("Notifying other recipients about completed AI response");
-            for (let i = 1; i < messageRecipients.length; i++) {
-              const recipientId = messageRecipients[i];
-              const client = clients.get(recipientId);
-              if (client && client.readyState === WebSocket.OPEN) {
-                const completionMessage = {
-                  type: "stream_complete",
-                  sessionId: message.sessionId,
-                  content: aiResponse
-                };
-                console.log("Sending completion notification to recipient:", recipientId);
-                client.send(JSON.stringify(completionMessage));
-              } else {
-                console.log(`Cannot send to recipient ${recipientId}: ${client ? 'WebSocket not open' : 'Client not connected'}`);
-              }
+          // Send the AI response to all recipients
+          messageRecipients.forEach(recipientId => {
+            const client = clients.get(recipientId);
+            if (client && client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                type: "message",
+                message: {
+                  ...savedMessage,
+                  sender: {
+                    id: "ai",
+                    name: "Dr. AI Therapist"
+                  }
+                }
+              }));
+            } else {
+              console.log(`Cannot send to recipient ${recipientId}: ${client ? 'WebSocket not open' : 'Client not connected'}`);
             }
-          }
+          });
           
         } else if (session.type === "private") {
           // Private therapy - only send to the creator
@@ -157,15 +157,33 @@ export function setupWebSocketServer(server: Server) {
           // Get client for streaming
           const streamClient = clients.get(session.creatorId);
           
-          // Generate response with streaming if possible
+          // Generate AI response for private therapy
           console.log("Starting AI response generation for private therapy");
-          const aiResponse = await generateTherapistResponse(
+          const aiResponse = await generateAIResponse(
             formattedMessages, 
-            "private",
-            streamClient,
-            message.sessionId,
-            streamClient && streamClient.readyState === WebSocket.OPEN
+            "private"
           );
+          
+          // Save the AI message to database
+          const aiMessage = await storage.createMessage({
+            sessionId: message.sessionId,
+            isAi: true,
+            content: aiResponse
+          });
+          
+          // Send the message to the client
+          if (streamClient && streamClient.readyState === WebSocket.OPEN) {
+            streamClient.send(JSON.stringify({
+              type: "message",
+              message: {
+                ...aiMessage,
+                sender: {
+                  id: "ai",
+                  name: "Dr. AI Therapist"
+                }
+              }
+            }));
+          }
           
           console.log("Private therapy AI response generated:", aiResponse.substring(0, 100) + "...");
           
