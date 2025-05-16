@@ -63,7 +63,8 @@ export async function generateTherapistResponse(
               type: "stream",
               messageId: messageId,
               content: content,
-              fullContent: fullResponse
+              fullContent: fullResponse,
+              sessionId: sessionId
             }));
           }
         }
@@ -72,6 +73,16 @@ export async function generateTherapistResponse(
       // Update the message with complete content
       if (sessionId && messageId) {
         await storage.updateMessage(messageId, fullResponse);
+        
+        // Send completion notification to client
+        if (client && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "stream_end",
+            messageId: messageId,
+            sessionId: sessionId,
+            fullContent: fullResponse
+          }));
+        }
       }
       
       console.log(`OpenAI streaming response completed: ${fullResponse.substring(0, 100)}...`);

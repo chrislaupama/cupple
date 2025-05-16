@@ -82,7 +82,12 @@ export function useChat(sessionId: number, userId: string) {
         const fullContent = data.fullContent || "";
         const messageId = data.messageId;
         
-        // Check if this message exists in our messages array
+        // First remove any typing indicators
+        setMessages(prevMessages => {
+          return prevMessages.filter(msg => msg.id !== -999);
+        });
+        
+        // Then check if this message exists in our messages array
         setMessages(prevMessages => {
           const exists = prevMessages.some(msg => msg.id === messageId);
           
@@ -113,15 +118,28 @@ export function useChat(sessionId: number, userId: string) {
       
       // Handle stream complete notification
       else if (data.type === "stream_complete" || data.type === "stream_end") {
+        console.log("Stream complete received:", data);
         setIsStreaming(false);
         
         // If sessionId matches current session, update messages
         if (data.sessionId === sessionId) {
           console.log("Stream complete for session:", sessionId);
-          // Wait a moment before refetching to make sure the database is updated
+          
+          // First update the message with the full content if we have it
+          if (data.fullContent && data.messageId) {
+            setMessages(prevMessages => {
+              return prevMessages.map(msg => 
+                msg.id === data.messageId 
+                  ? { ...msg, content: data.fullContent || msg.content }
+                  : msg
+              );
+            });
+          }
+          
+          // Then re-fetch all messages to ensure consistency
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}/messages`] });
-          }, 500);
+          }, 300);
         }
       }
     },
@@ -142,6 +160,27 @@ export function useChat(sessionId: number, userId: string) {
       return;
     }
 
+    // Set streaming state to true when sending a message
+    setIsStreaming(true);
+
+    // Create temporary message for immediate feedback
+    const tempUserMessage = {
+      id: Date.now(), // Temporary ID
+      sessionId,
+      senderId: userId,
+      content,
+      isAi: false,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: userId,
+        name: "You"
+      }
+    };
+
+    // Optimistically add user message to UI
+    setMessages(prev => [...prev, tempUserMessage]);
+
+    // Prepare message data for WebSocket
     const messageData = {
       type: "message",
       sessionId,
@@ -153,7 +192,36 @@ export function useChat(sessionId: number, userId: string) {
     };
 
     console.log("Sending message:", messageData);
-    return sendMessage(messageData);
+    
+    // Send via WebSocket
+    sendMessage(messageData);
+    
+    // Add typing indicator after a short delay
+    setTimeout(() => {
+      const typingIndicator = {
+        id: -999, // Special ID for typing indicator
+        sessionId,
+        isAi: true,
+        content: "...",
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: "ai",
+          name: "Dr. AI Therapist"
+        }
+      };
+      
+      // Add typing indicator if we haven't received a real AI message yet
+      setMessages(prev => {
+        // Only add if we don't already have an AI message as the last message
+        const lastMessage = prev[prev.length - 1];
+        if (!lastMessage || !lastMessage.isAi) {
+          return [...prev, typingIndicator];
+        }
+        return prev;
+      });
+    }, 800);
+    
+    return true;
   };
 
   // Loading state
