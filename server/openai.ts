@@ -51,7 +51,7 @@ export async function generateTherapistResponse(
         messageId = savedMessage.id;
       }
       
-      // Process the stream
+      // Process the stream with a delay for visible streaming effect
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content || '';
         if (content) {
@@ -59,6 +59,7 @@ export async function generateTherapistResponse(
           
           // Send incremental update to client
           if (client && client.readyState === WebSocket.OPEN && messageId) {
+            // Send message with the latest chunk
             client.send(JSON.stringify({
               type: "stream",
               messageId: messageId,
@@ -66,6 +67,10 @@ export async function generateTherapistResponse(
               fullContent: fullResponse,
               sessionId: sessionId
             }));
+            
+            // Add a small delay to make the streaming more visible to humans
+            // This will slow down the streaming just enough to be noticeable
+            await new Promise(resolve => setTimeout(resolve, 10));
           }
         }
       }

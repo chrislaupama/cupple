@@ -157,16 +157,17 @@ export function setupWebSocketServer(server: Server) {
           // Get client for streaming
           const streamClient = clients.get(session.creatorId);
           
-          // Generate streaming response
+          // Generate response with streaming if possible
+          console.log("Starting AI response generation for private therapy");
           const aiResponse = await generateTherapistResponse(
             formattedMessages, 
             "private",
             streamClient,
             message.sessionId,
-            true
+            streamClient && streamClient.readyState === WebSocket.OPEN
           );
           
-          console.log("Private therapy AI response generated:", aiResponse);
+          console.log("Private therapy AI response generated:", aiResponse.substring(0, 100) + "...");
           
           // The streaming response is already sent directly to the client
           // No need to send an additional message here
