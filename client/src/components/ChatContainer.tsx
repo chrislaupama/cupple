@@ -29,6 +29,9 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
       </div>
     );
   }
+  
+  // Cast to expected Session type
+  const typedSession = session as Session;
 
   const handleSendMessage = (content: string) => {
     if (content.trim()) {
@@ -38,7 +41,7 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
 
   return (
     <div className="flex-1 flex flex-col bg-muted/30 overflow-hidden">
-      <ChatHeader session={session} type={chatType} />
+      <ChatHeader session={typedSession} type={chatType} />
       <ChatMessageList messages={messages} userId={userId} />
       <ChatInput onSendMessage={handleSendMessage} isPrivate={chatType === "private"} />
     </div>
@@ -47,20 +50,15 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
 
 function ChatHeader({ session, type }: { session: Session, type: "couples" | "private" }) {
   return (
-    <div className="border-b border-border p-4 bg-background shadow-sm">
+    <div className="border-b p-4 bg-background shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <h2 className="text-lg font-semibold font-mono">
-            {session.title || (type === "couples" ? "Couples Therapy Session" : "Private Therapy Session")}
+          <h2 className="text-lg font-semibold">
+            {session.title || (type === "couples" ? "Couples Session" : "Private Session")}
           </h2>
           <Badge 
             variant="outline" 
-            className={cn(
-              "ml-3",
-              type === "couples" 
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" 
-                : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-            )}
+            className="ml-3"
           >
             {type === "couples" ? "Active" : "Private"}
           </Badge>
@@ -73,7 +71,7 @@ function ChatHeader({ session, type }: { session: Session, type: "couples" | "pr
         </div>
       </div>
       <p className="text-sm text-muted-foreground mt-1">
-        With Dr. AI Therapist • {type === "private" ? "Your partner cannot see these messages" : "Started recently"}
+        With AI Therapist • {type === "private" ? "Your partner cannot see these messages" : "Started recently"}
       </p>
     </div>
   );

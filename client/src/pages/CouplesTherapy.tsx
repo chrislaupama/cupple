@@ -74,10 +74,10 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <Heart className="w-16 h-16 mx-auto text-primary/50 mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Start Couples Therapy</h2>
+            <Heart className="w-16 h-16 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Start Couples Session</h2>
             <p className="text-muted-foreground mb-6">
-              Begin your journey toward a healthier relationship with AI-guided couples therapy.
+              Begin your journey toward a healthier relationship.
             </p>
             
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

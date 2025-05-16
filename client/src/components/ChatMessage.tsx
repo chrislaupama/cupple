@@ -13,16 +13,14 @@ type ChatMessageProps = {
 export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessageProps) {
   let avatarContent;
   let nameBadge;
-  let bubbleClass;
   
   if (isAi) {
     avatarContent = (
-      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-        <Brain className="text-primary h-4 w-4" />
+      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+        <Brain className="h-4 w-4" />
       </div>
     );
-    nameBadge = "Dr. AI Therapist";
-    bubbleClass = "bg-background dark:bg-gray-800";
+    nameBadge = "AI Therapist";
   } else if (isUser) {
     avatarContent = (
       <Avatar className="h-8 w-8">
@@ -31,15 +29,13 @@ export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessagePro
       </Avatar>
     );
     nameBadge = "You";
-    bubbleClass = "bg-primary text-primary-foreground";
   } else if (isPartner) {
     avatarContent = (
-      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
-        <span className="font-medium text-gray-500 dark:text-gray-400 text-sm">P</span>
-      </div>
+      <Avatar className="h-8 w-8">
+        <AvatarFallback>P</AvatarFallback>
+      </Avatar>
     );
     nameBadge = message.sender?.name || "Partner";
-    bubbleClass = "bg-gray-100 dark:bg-gray-700";
   }
   
   // Format message content with paragraphs
@@ -60,13 +56,9 @@ export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessagePro
       
       <div className={cn(
         "rounded-lg p-4 max-w-[80%] shadow-sm",
-        bubbleClass
+        isUser ? "bg-primary text-primary-foreground" : "bg-muted"
       )}>
-        <p className={cn(
-          "font-semibold text-sm",
-          isAi && "text-primary dark:text-primary/90",
-          isPartner && "text-gray-600 dark:text-gray-300"
-        )}>
+        <p className="font-semibold text-sm">
           {nameBadge}
         </p>
         <div className="mt-1 space-y-2">

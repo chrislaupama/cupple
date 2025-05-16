@@ -73,10 +73,10 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <Lock className="w-16 h-16 mx-auto text-purple-500/50 mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Start Private Therapy</h2>
+            <Lock className="w-16 h-16 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Start Private Session</h2>
             <p className="text-muted-foreground mb-6">
-              Have a private conversation with our AI therapist in a secure, confidential space.
+              Have a private conversation in a secure, confidential space.
             </p>
             
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

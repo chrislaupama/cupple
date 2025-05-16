@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, Smile, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type ChatInputProps = {
@@ -35,9 +35,9 @@ export function ChatInput({ onSendMessage, isPrivate }: ChatInputProps) {
   }, [message]);
 
   return (
-    <div className="border-t border-border p-4 bg-background">
+    <div className="border-t p-4 bg-background">
       <form onSubmit={handleSendMessage} className="flex items-end space-x-2">
-        <div className="flex-1 bg-muted rounded-lg p-3 focus-within:ring-2 focus-within:ring-primary focus-within:ring-opacity-50">
+        <div className="flex-1 bg-muted rounded-lg p-3 focus-within:ring-1 focus-within:ring-ring">
           <Textarea
             ref={textareaRef}
             value={message}
@@ -46,26 +46,16 @@ export function ChatInput({ onSendMessage, isPrivate }: ChatInputProps) {
             placeholder="Type your message..."
             rows={2}
           />
-          <div className="flex justify-between items-center mt-2">
-            <div className="flex space-x-1">
-              <Button type="button" size="icon" variant="ghost" className="h-8 w-8">
-                <Paperclip className="h-4 w-4 text-muted-foreground" />
-              </Button>
-              <Button type="button" size="icon" variant="ghost" className="h-8 w-8">
-                <Smile className="h-4 w-4 text-muted-foreground" />
-              </Button>
-            </div>
-            <div>
-              {isPrivate && (
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                  Private Message
-                </Badge>
-              )}
-            </div>
+          <div className="flex justify-end items-center mt-2">
+            {isPrivate && (
+              <Badge variant="outline">
+                Private Message
+              </Badge>
+            )}
           </div>
         </div>
-        <Button type="submit" size="icon" className="h-10 w-10">
-          <Send className="h-5 w-5" />
+        <Button type="submit" size="icon">
+          <Send className="h-4 w-4" />
         </Button>
       </form>
     </div>
