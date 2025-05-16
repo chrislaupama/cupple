@@ -80,6 +80,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch therapy session" });
     }
   });
+  
+  // Update session title
+  app.patch('/api/sessions/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      if (isNaN(sessionId)) {
+        return res.status(400).json({ message: "Invalid session ID" });
+      }
+      
+      const { title } = req.body;
+      if (!title || typeof title !== 'string' || title.trim() === '') {
+        return res.status(400).json({ message: "Valid title is required" });
+      }
+      
+      // Check if session exists and user has access
+      const session = await storage.getTherapySession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      const userId = req.user.claims.sub;
+      if (session.creatorId !== userId) {
+        return res.status(403).json({ message: "Only the creator can rename sessions" });
+      }
+      
+      const updatedSession = await storage.updateSessionTitle(sessionId, title.trim());
+      res.json(updatedSession);
+    } catch (error) {
+      console.error("Error updating session title:", error);
+      res.status(500).json({ message: "Failed to update session title" });
+    }
+  });
+  
+  // Delete session
+  app.delete('/api/sessions/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      if (isNaN(sessionId)) {
+        return res.status(400).json({ message: "Invalid session ID" });
+      }
+      
+      // Check if session exists and user has access
+      const session = await storage.getTherapySession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      const userId = req.user.claims.sub;
+      if (session.creatorId !== userId) {
+        return res.status(403).json({ message: "Only the creator can delete sessions" });
+      }
+      
+      const deleted = await storage.deleteTherapySession(sessionId);
+      if (deleted) {
+        res.status(200).json({ success: true });
+      } else {
+        res.status(500).json({ message: "Failed to delete session" });
+      }
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      res.status(500).json({ message: "Failed to delete session" });
+    }
+  });
 
   // Message routes
   app.get('/api/sessions/:id/messages', isAuthenticated, async (req: any, res) => {

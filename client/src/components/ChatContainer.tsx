@@ -1,13 +1,41 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { useChat, Message, Session } from "@/hooks/useChat";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type ChatContainerProps = {
   sessionId: number;
@@ -16,7 +44,7 @@ type ChatContainerProps = {
 };
 
 export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProps) {
-  const { messages, session, isLoading, isConnected, sendMessage } = useChat(sessionId, userId);
+  const { messages, session, isLoading, sendMessage } = useChat(sessionId, userId);
   
   if (isLoading) {
     return <ChatSkeleton />;
@@ -61,6 +89,61 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
 }
 
 function ChatHeader({ session, type }: { session: Session, type: "couples" | "private" }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState(session.title);
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  
+  const handleRenameSession = async () => {
+    if (!newTitle || !newTitle.trim()) return;
+    
+    try {
+      await apiRequest("PATCH", `/api/sessions/${session.id}`, {
+        title: newTitle.trim()
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/sessions/${session.id}`] });
+      
+      toast({
+        title: "Session renamed",
+        description: "Your session has been renamed successfully."
+      });
+      
+      setIsRenameDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to rename session. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleDeleteSession = async () => {
+    try {
+      await apiRequest("DELETE", `/api/sessions/${session.id}`);
+      
+      toast({
+        title: "Session deleted",
+        description: "Your session has been deleted successfully."
+      });
+      
+      // Invalidate the queries
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      
+      // Navigate to home
+      setLocation("/");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete session. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   return (
     <div className="border-b py-3 px-4 md:px-6 bg-background shadow-sm">
       <div className="flex items-center justify-between max-w-4xl mx-auto">
@@ -77,11 +160,81 @@ function ChatHeader({ session, type }: { session: Session, type: "couples" | "pr
         </div>
         
         <div className="flex items-center">
-          <Button size="sm" variant="ghost" className="h-8 w-8">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => {
+                setNewTitle(session.title);
+                setIsRenameDialogOpen(true);
+              }}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Rename
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
+      
+      {/* Rename Dialog */}
+      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Session</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this therapy session.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Session name</Label>
+              <Input
+                id="name"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder={type === "couples" ? "Couples Session" : "Private Session"}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRenameSession}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this therapy session and all its messages. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteSession}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -140,7 +293,7 @@ function ChatSkeleton() {
         </div>
       </div>
       
-      <div className="relative border-t p-4 md:p-6 bg-background">
+      <div className="relative p-4 md:p-6 bg-background">
         <div className="mx-auto max-w-4xl">
           <Skeleton className="h-12 w-full rounded-xl" />
         </div>

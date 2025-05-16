@@ -26,6 +26,8 @@ export interface IStorage {
   getTherapySessions(userId: string): Promise<TherapySession[]>;
   createTherapySession(session: InsertTherapySession): Promise<TherapySession>;
   updateSessionLastActivity(sessionId: number): Promise<void>;
+  updateSessionTitle(sessionId: number, title: string): Promise<TherapySession>;
+  deleteTherapySession(sessionId: number): Promise<boolean>;
 
   // Message operations
   getSessionMessages(sessionId: number, limit?: number): Promise<Message[]>;
@@ -97,6 +99,39 @@ export class DatabaseStorage implements IStorage {
       .update(therapySessions)
       .set({ lastMessageAt: new Date() })
       .where(eq(therapySessions.id, sessionId));
+  }
+  
+  async updateSessionTitle(sessionId: number, title: string): Promise<TherapySession> {
+    const [updatedSession] = await db
+      .update(therapySessions)
+      .set({
+        title,
+        updatedAt: new Date(),
+      })
+      .where(eq(therapySessions.id, sessionId))
+      .returning();
+    
+    return updatedSession;
+  }
+  
+  async deleteTherapySession(sessionId: number): Promise<boolean> {
+    try {
+      // First delete all messages that belong to this session
+      await db
+        .delete(messages)
+        .where(eq(messages.sessionId, sessionId));
+      
+      // Then delete the session itself
+      const result = await db
+        .delete(therapySessions)
+        .where(eq(therapySessions.id, sessionId))
+        .returning();
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting therapy session:", error);
+      return false;
+    }
   }
 
   // Message operations
