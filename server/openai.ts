@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { WebSocket } from "ws";
 import { storage } from "./storage";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Function to generate AI therapist responses
 // Non-streaming version for reference
