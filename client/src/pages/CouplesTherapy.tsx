@@ -31,7 +31,7 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
   const createSession = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/sessions", {
-        title: sessionTitle || "Couples Therapy Session",
+        title: sessionTitle || "Couples Session",
         type: "couples",
       });
       return await response.json();
@@ -40,6 +40,10 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       setSessionTitle("");
       setIsDialogOpen(false);
+      
+      // Navigate to the new session
+      window.location.href = `/session/${data.id}`;
+      
       toast({
         title: "Success",
         description: "New session created.",

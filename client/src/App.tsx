@@ -16,6 +16,7 @@ function Router() {
       <Route path="/welcome" component={Welcome} />
       <Route path="/couples" component={Home} />
       <Route path="/private" component={Home} />
+      <Route path="/session/:id" component={Home} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

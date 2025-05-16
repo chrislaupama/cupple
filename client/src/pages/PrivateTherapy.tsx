@@ -30,7 +30,7 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
   const createSession = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/sessions", {
-        title: sessionTitle || "Private Therapy Session",
+        title: sessionTitle || "Private Session",
         type: "private",
       });
       return await response.json();
@@ -39,6 +39,10 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       setSessionTitle("");
       setIsDialogOpen(false);
+      
+      // Navigate to the new session
+      window.location.href = `/session/${data.id}`;
+      
       toast({
         title: "Success",
         description: "New private session created.",
