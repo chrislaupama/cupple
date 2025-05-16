@@ -8,7 +8,6 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
 export function EmptyStateCard() {
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -17,39 +16,54 @@ export function EmptyStateCard() {
       setIsLoading(true);
       
       try {
-        console.log(`Creating new ${type} session...`);
-        const response = await apiRequest("POST", "/api/sessions", {
-          title: `${type === "private" ? "Private" : "Couples"} Session 1`,
-          type,
+        // Make a plain fetch request to create the session
+        const response = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: `${type === "private" ? "Private" : "Couples"} Session`,
+            type
+          }),
+          credentials: "include"
         });
         
-        // Check if the response is OK
+        // If response is not OK, throw error
         if (!response.ok) {
-          throw new Error(`Failed to create session: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          throw new Error(`Failed to create session: ${response.status} - ${errorText}`);
         }
         
+        // Parse the response
         const data = await response.json();
         return data;
       } catch (error) {
-        console.error("Error creating session:", error);
+        console.error("Session creation error:", error);
         throw error;
       } finally {
         setIsLoading(false);
       }
     },
     onSuccess: (data) => {
+      // Invalidate the sessions query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       
-      // Use direct URL change instead of location setter
-      // This ensures it works consistently on mobile
-      window.location.href = `/session/${data.id}`;
+      // Use window.location for more reliable navigation
+      if (data && data.id) {
+        const sessionUrl = `/session/${data.id}`;
+        console.log(`Navigation to new session: ${sessionUrl}`);
+        window.location.href = sessionUrl;
+      } else {
+        console.error("Missing session ID in response:", data);
+      }
       
       toast({
-        title: "Session created",
+        title: "Success!",
         description: "Your new therapy session has been created."
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to create session:", error);
+      
       toast({
         title: "Error",
         description: "Failed to create new session. Please try again.",
