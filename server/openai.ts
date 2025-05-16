@@ -1,11 +1,17 @@
 import OpenAI from "openai";
+import { WebSocket } from "ws";
+import { storage } from "./storage";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Function to generate AI therapist responses
+// Non-streaming version for reference
 export async function generateTherapistResponse(
   messages: Array<{ role: string; content: string }>,
-  type: string
+  type: string,
+  client?: WebSocket,
+  sessionId?: number,
+  isStream: boolean = false
 ): Promise<string> {
   try {
     console.log(`Generating ${type} therapy response with OpenAI API`);
@@ -23,16 +29,67 @@ export async function generateTherapistResponse(
       content: msg.content
     }));
     
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [systemMessage, ...formattedMessages],
-    });
+    // If streaming is requested and we have a client
+    if (isStream && client) {
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const stream = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [systemMessage, ...formattedMessages],
+        stream: true,
+      });
+      
+      let fullResponse = '';
+      let messageId: number | null = null;
+      
+      // Save empty message to get ID
+      if (sessionId) {
+        const savedMessage = await storage.createMessage({
+          sessionId: sessionId,
+          isAi: true,
+          content: ""
+        });
+        messageId = savedMessage.id;
+      }
+      
+      // Process the stream
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          fullResponse += content;
+          
+          // Send incremental update to client
+          if (client && client.readyState === WebSocket.OPEN && messageId) {
+            client.send(JSON.stringify({
+              type: "stream",
+              messageId: messageId,
+              content: content,
+              fullContent: fullResponse
+            }));
+          }
+        }
+      }
+      
+      // Update the message with complete content
+      if (sessionId && messageId) {
+        await storage.updateMessage(messageId, fullResponse);
+      }
+      
+      console.log(`OpenAI streaming response completed: ${fullResponse.substring(0, 100)}...`);
+      
+      return fullResponse;
+    } else {
+      // Non-streaming version
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [systemMessage, ...formattedMessages],
+      });
 
-    const responseText = response.choices[0].message.content || "I'm not sure how to respond to that.";
-    console.log(`OpenAI response received: ${responseText.substring(0, 100)}...`);
-    
-    return responseText;
+      const responseText = response.choices[0].message.content || "I'm not sure how to respond to that.";
+      console.log(`OpenAI response received: ${responseText.substring(0, 100)}...`);
+      
+      return responseText;
+    }
   } catch (error: any) {
     console.error("Error generating therapist response:", error);
     

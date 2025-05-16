@@ -89,15 +89,27 @@ export function setupWebSocketServer(server: Server) {
           
           console.log("Generating AI response with message history:", formattedMessages);
           
-          const aiResponse = await generateTherapistResponse(formattedMessages, "couples");
+          // Get recipients for couples therapy
+          let messageRecipients = [session.creatorId];
+          if (session.partnerId) {
+            messageRecipients.push(session.partnerId);
+          }
+          
+          // Get the first recipient's client for streaming
+          const streamClient = clients.get(messageRecipients[0]);
+          
+          // Generate streaming response
+          const aiResponse = await generateTherapistResponse(
+            formattedMessages, 
+            "couples",
+            streamClient,
+            message.sessionId,
+            true
+          );
+          
           console.log("AI response generated:", aiResponse);
           
-          // Save AI response to database
-          const savedAiMessage = await storage.createMessage({
-            sessionId: message.sessionId,
-            isAi: true,
-            content: aiResponse
-          });
+          // No need to save message here as it's done in the streaming function
           
           // Send AI response to all recipients
           console.log("Sending AI response to recipients:", recipients);
@@ -143,15 +155,19 @@ export function setupWebSocketServer(server: Server) {
           
           console.log("Generating AI response for private therapy with history:", formattedMessages);
           
-          const aiResponse = await generateTherapistResponse(formattedMessages, "private");
-          console.log("Private therapy AI response generated:", aiResponse);
+          // Get client for streaming
+          const streamClient = clients.get(session.creatorId);
           
-          // Save AI response to database
-          const savedAiMessage = await storage.createMessage({
-            sessionId: message.sessionId,
-            isAi: true,
-            content: aiResponse
-          });
+          // Generate streaming response
+          const aiResponse = await generateTherapistResponse(
+            formattedMessages, 
+            "private",
+            streamClient,
+            message.sessionId,
+            true
+          );
+          
+          console.log("Private therapy AI response generated:", aiResponse);
           
           // Send AI response to the creator only
           if (client && client.readyState === WebSocket.OPEN) {

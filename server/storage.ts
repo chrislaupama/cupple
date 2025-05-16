@@ -32,6 +32,7 @@ export interface IStorage {
   // Message operations
   getSessionMessages(sessionId: number, limit?: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+  updateMessage(messageId: number, content: string): Promise<Message>;
 
   // Partner operations
   getPartner(userId: string, partnerId: string): Promise<Partner | undefined>;
@@ -150,6 +151,15 @@ export class DatabaseStorage implements IStorage {
       .values(message)
       .returning();
     return newMessage;
+  }
+  
+  async updateMessage(messageId: number, content: string): Promise<Message> {
+    const [updatedMessage] = await db
+      .update(messages)
+      .set({ content })
+      .where(eq(messages.id, messageId))
+      .returning();
+    return updatedMessage;
   }
 
   // Partner operations
