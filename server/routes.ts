@@ -279,6 +279,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Add dedicated API route for direct AI responses
+  app.post('/api/ai/therapy', isAuthenticated, async (req, res) => {
+    try {
+      const { message, type } = req.body;
+      
+      if (!message || !type) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      console.log(`Direct API therapy request (${type}): "${message.substring(0, 30)}..."`);
+      
+      // Generate response using our simplified OpenAI integration
+      const response = await getSimpleTherapyResponse(message, type);
+      
+      return res.json({ response });
+    } catch (error) {
+      console.error("Error in direct therapy API:", error);
+      return res.status(500).json({ 
+        error: "Failed to generate response",
+        fallbackResponse: "I'm having trouble responding right now. Please try again shortly."
+      });
+    }
+  });
+  
   // Function to generate AI responses using OpenAI
   async function handleAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
@@ -292,11 +316,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Processing message for ${type} therapy, sessionId: ${sessionId}, messageId: ${messageId}`);
       
-      // Generate therapy response using our simplified OpenAI integration
-      const aiResponse = await getSimpleTherapyResponse(lastUserMessage, type);
+      // Log message for debugging
+      console.log(`Generating therapy response for message: ${lastUserMessage.substring(0, 30)}...`);
       
-      // Update the message with the AI-generated response
-      await storage.updateMessage(messageId, aiResponse);
+      try {
+        // Generate therapy response using our simplified OpenAI integration
+        const aiResponse = await getSimpleTherapyResponse(lastUserMessage, type);
+        
+        // Update the message with the AI-generated response
+        await storage.updateMessage(messageId, aiResponse);
+      } catch (openaiError) {
+        console.error("OpenAI error:", openaiError);
+        await storage.updateMessage(messageId, "I apologize for the technical difficulties. Let's try again in a moment.");
+      }
       
       // Update session's last activity time
       await storage.updateSessionLastActivity(sessionId);
