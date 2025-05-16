@@ -169,8 +169,8 @@ export function useChat(sessionId: number, userId: string) {
         const response = await fetch(`/api/messages/${messageId}/stream`);
         const data = await response.json();
         
-        // If we have an actual message (not just "Thinking...")
-        if (data.content !== previousContent) {
+        // Update message content whenever we get new data
+        if (data.content && data.content !== previousContent) {
           previousContent = data.content;
           
           // Update message in the UI
@@ -257,21 +257,7 @@ export function useChat(sessionId: number, userId: string) {
       
       setMessages(prev => [...prev, tempUserMessage]);
       
-      // Add typing indicator
-      const typingIndicator = {
-        id: -999, // Special ID for typing indicator
-        sessionId,
-        isAi: true,
-        content: "...",
-        createdAt: new Date().toISOString(),
-        sender: {
-          id: "ai",
-          name: "Dr. AI Therapist"
-        }
-      };
-      
-      // Add typing indicator immediately
-      setMessages(prev => [...prev, typingIndicator]);
+      // Remove typing indicator logic
       
       // Send the message to the API
       const response = await apiRequest("POST", `/api/sessions/${sessionId}/messages`, { content }) as MessageResponse;
@@ -288,7 +274,7 @@ export function useChat(sessionId: number, userId: string) {
         id: response.aiMessageId,
         sessionId,
         isAi: true,
-        content: "...",
+        content: "",
         createdAt: new Date().toISOString(),
         sender: {
           id: "ai",
