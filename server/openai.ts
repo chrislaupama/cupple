@@ -10,27 +10,34 @@ export async function generateTherapistResponse(
   try {
     console.log(`Generating ${type} therapy response with OpenAI API`);
     
+    // Prepare messages in the correct format for OpenAI API
+    const systemMessage = {
+      role: "system" as const,
+      content: getTherapistSystemPrompt(type)
+    };
+    
+    const formattedMessages = messages.map(msg => ({
+      role: (msg.role === "user" || msg.role === "assistant") 
+        ? msg.role as "user" | "assistant" 
+        : "user" as const,
+      content: msg.content
+    }));
+    
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: getTherapistSystemPrompt(type),
-        },
-        ...messages,
-      ],
+      messages: [systemMessage, ...formattedMessages],
     });
 
     const responseText = response.choices[0].message.content || "I'm not sure how to respond to that.";
     console.log(`OpenAI response received: ${responseText.substring(0, 100)}...`);
     
     return responseText;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating therapist response:", error);
     
     // Check for specific API key issues
-    if (error.toString().includes('API key')) {
+    if (error.toString && error.toString().includes('API key')) {
       console.error("API key issue detected. Please check OPENAI_API_KEY is valid and correctly set.");
     }
     

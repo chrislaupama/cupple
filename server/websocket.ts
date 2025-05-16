@@ -100,10 +100,11 @@ export function setupWebSocketServer(server: Server) {
           });
           
           // Send AI response to all recipients
+          console.log("Sending AI response to recipients:", recipients);
           recipients.forEach(recipientId => {
             const client = clients.get(recipientId);
             if (client && client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify({
+              const aiMessageData = {
                 type: "message",
                 message: {
                   ...savedAiMessage,
@@ -112,7 +113,11 @@ export function setupWebSocketServer(server: Server) {
                     name: "Dr. AI Therapist"
                   }
                 }
-              }));
+              };
+              console.log("Sending AI message to recipient:", recipientId, aiMessageData);
+              client.send(JSON.stringify(aiMessageData));
+            } else {
+              console.log(`Cannot send to recipient ${recipientId}: ${client ? 'WebSocket not open' : 'Client not connected'}`);
             }
           });
           
@@ -136,7 +141,10 @@ export function setupWebSocketServer(server: Server) {
             content: msg.content
           }));
           
+          console.log("Generating AI response for private therapy with history:", formattedMessages);
+          
           const aiResponse = await generateTherapistResponse(formattedMessages, "private");
+          console.log("Private therapy AI response generated:", aiResponse);
           
           // Save AI response to database
           const savedAiMessage = await storage.createMessage({
@@ -147,7 +155,7 @@ export function setupWebSocketServer(server: Server) {
           
           // Send AI response to the creator only
           if (client && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
+            const aiMessageData = {
               type: "message",
               message: {
                 ...savedAiMessage,
@@ -156,7 +164,11 @@ export function setupWebSocketServer(server: Server) {
                   name: "Dr. AI Therapist"
                 }
               }
-            }));
+            };
+            console.log("Sending private therapy AI message to creator:", session.creatorId, aiMessageData);
+            client.send(JSON.stringify(aiMessageData));
+          } else {
+            console.log(`Cannot send to creator ${session.creatorId}: ${client ? 'WebSocket not open' : 'Client not connected'}`);
           }
         }
         
