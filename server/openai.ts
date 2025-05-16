@@ -11,7 +11,8 @@ export async function generateTherapistResponse(
   type: string,
   client?: WebSocket,
   sessionId?: number,
-  isStream: boolean = false
+  isStream: boolean = false,
+  onChunk?: (chunk: string, fullContent: string) => void
 ): Promise<string> {
   try {
     console.log(`Generating ${type} therapy response with OpenAI API`);

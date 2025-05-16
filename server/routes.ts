@@ -1,9 +1,10 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
+import { generateTherapistResponse } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -171,6 +172,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch messages" });
     }
   });
+  
+  // Simple API endpoint for sending user messages
+  app.post('/api/sessions/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      if (isNaN(sessionId)) {
+        return res.status(400).json({ message: "Invalid session ID" });
+      }
+      
+      const { content } = req.body;
+      if (!content || typeof content !== 'string' || content.trim() === '') {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+      
+      // Check if user has access to this session
+      const userId = req.user.claims.sub;
+      const session = await storage.getTherapySession(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      if (session.creatorId !== userId && session.partnerId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Save user message
+      const userMessage = await storage.createMessage({
+        sessionId,
+        senderId: userId,
+        isAi: false,
+        content: content.trim()
+      });
+      
+      // Create an empty AI message
+      const aiMessage = await storage.createMessage({
+        sessionId,
+        isAi: true,
+        content: ""
+      });
+      
+      // Get chat history for context
+      const chatHistory = await storage.getSessionMessages(sessionId, 10);
+      const formattedMessages = chatHistory.map(msg => ({
+        role: msg.isAi ? "assistant" : "user",
+        content: msg.content
+      }));
+      
+      // Start generating AI response in the background without waiting
+      generateAIResponse(sessionId, aiMessage.id, formattedMessages, session.type);
+      
+      // Return both message IDs immediately
+      res.json({
+        userMessageId: userMessage.id,
+        aiMessageId: aiMessage.id
+      });
+    } catch (error) {
+      console.error("Error processing message:", error);
+      res.status(500).json({ message: "Failed to process message" });
+    }
+  });
+  
+  // API endpoint to get streamed AI chunks
+  app.get('/api/messages/:id/stream', isAuthenticated, async (req: any, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Invalid message ID" });
+      }
+      
+      // Get the current message content
+      const message = await storage.getMessage(messageId);
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+      
+      // Check session access
+      const session = await storage.getTherapySession(message.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      const userId = req.user.claims.sub;
+      if (session.creatorId !== userId && session.partnerId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Return the current message content and done status
+      res.json({
+        content: message.content,
+        isComplete: message.content.length > 0 && !message.content.endsWith("...")
+      });
+    } catch (error) {
+      console.error("Error fetching message stream:", error);
+      res.status(500).json({ message: "Failed to fetch message stream" });
+    }
+  });
+  
+  // Background function to generate AI response and update the message incrementally
+  async function generateAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
+    try {
+      // Initialize OpenAI client
+      const OpenAI = require('openai');
+      const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const systemPrompt = type === "couples" 
+        ? "You are Dr. AI Therapist, a compassionate couples therapist helping improve communication."
+        : "You are Dr. AI Therapist, a compassionate individual therapist providing support and guidance.";
+      
+      // Create properly formatted messages for OpenAI API
+      const apiMessages = [];
+      
+      // Add system message
+      apiMessages.push({
+        role: "system",
+        content: systemPrompt
+      });
+      
+      // Add conversation history
+      for (const msg of messages) {
+        apiMessages.push({
+          role: msg.role === "assistant" ? "assistant" : "user",
+          content: msg.content
+        });
+      }
+      
+      // Create streaming response
+      const stream = await openaiClient.chat.completions.create({
+        model: "gpt-4o",
+        messages: apiMessages,
+        stream: true,
+      });
+      
+      // Track the full response
+      let responseContent = "..."; // Start with ellipsis to indicate loading
+      await storage.updateMessage(messageId, responseContent);
+      
+      // Process the stream
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          // Update response content
+          responseContent = responseContent === "..." ? content : responseContent + content;
+          
+          // Update the message in the database every few chunks to avoid too many writes
+          await storage.updateMessage(messageId, responseContent);
+          
+          // Add a small delay to make streaming more visible
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      
+      // Final update to ensure complete message is saved
+      if (responseContent === "...") {
+        responseContent = "I'm not sure how to respond to that.";
+      }
+      
+      await storage.updateMessage(messageId, responseContent);
+      
+      // Update session's last activity time
+      await storage.updateSessionLastActivity(sessionId);
+      
+      console.log("AI response generation complete for message: " + messageId);
+    } catch (error) {
+      console.error("Error generating AI response:", error);
+      // Update message with error notification
+      await storage.updateMessage(messageId, "Sorry, I encountered an error generating a response. Please try again.");
+    }
+  }
 
   // Partner routes
   app.get('/api/partners', isAuthenticated, async (req: any, res) => {

@@ -31,6 +31,7 @@ export interface IStorage {
 
   // Message operations
   getSessionMessages(sessionId: number, limit?: number): Promise<Message[]>;
+  getMessage(messageId: number): Promise<Message | undefined>;
   createMessage(message: InsertMessage): Promise<Message>;
   updateMessage(messageId: number, content: string): Promise<Message>;
 
