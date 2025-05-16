@@ -106,9 +106,9 @@ export function Sidebar() {
         <div className="space-y-1">
           {sessions && Array.isArray(sessions) && 
             sessions
-              .filter((session: SessionType) => session.type === "private")
+              .filter((session) => session.type === "private")
               .slice(0, 5)
-              .map((session: SessionType) => (
+              .map((session) => (
                 <Button
                   key={session.id}
                   variant="ghost"
@@ -124,7 +124,7 @@ export function Sidebar() {
               ))}
           
           {(!sessions || !Array.isArray(sessions) || 
-            sessions.filter((session: SessionType) => session.type === "private").length === 0) && (
+            sessions.filter((session) => session.type === "private").length === 0) && (
             <p className="text-xs text-muted-foreground px-3 py-2">No private sessions yet</p>
           )}
         </div>
@@ -148,9 +148,9 @@ export function Sidebar() {
         <div className="space-y-1">
           {sessions && Array.isArray(sessions) && 
             sessions
-              .filter((session: SessionType) => session.type === "couples")
+              .filter((session) => session.type === "couples")
               .slice(0, 5)
-              .map((session: SessionType) => (
+              .map((session) => (
                 <Button
                   key={session.id}
                   variant="ghost"
@@ -166,7 +166,7 @@ export function Sidebar() {
               ))}
           
           {(!sessions || !Array.isArray(sessions) || 
-            sessions.filter((session: SessionType) => session.type === "couples").length === 0) && (
+            sessions.filter((session) => session.type === "couples").length === 0) && (
             <p className="text-xs text-muted-foreground px-3 py-2">No couples sessions yet</p>
           )}
         </div>
