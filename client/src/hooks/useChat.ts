@@ -245,18 +245,18 @@ export function useChat(sessionId: number, userId: string) {
       setMessages(prev => [...prev, typingIndicator]);
       
       // Send the message to the API
-      const responseData = await apiRequest("POST", `/api/sessions/${sessionId}/messages`, { content });
+      const response = await apiRequest("POST", `/api/sessions/${sessionId}/messages`, { content }) as MessageResponse;
       
       // Remove typing indicator and update user message with real ID
       setMessages(prev => 
         prev
           .filter(msg => msg.id !== -999) // Remove typing indicator
-          .map(msg => msg.id === tempUserMessage.id ? { ...msg, id: responseData.userMessageId } : msg)
+          .map(msg => msg.id === tempUserMessage.id ? { ...msg, id: response.userMessageId } : msg)
       );
       
       // Add AI message (empty at first)
       const aiMessage = {
-        id: responseData.aiMessageId,
+        id: response.aiMessageId,
         sessionId,
         isAi: true,
         content: "...",
@@ -270,7 +270,7 @@ export function useChat(sessionId: number, userId: string) {
       setMessages(prev => [...prev, aiMessage]);
       
       // Start polling for updates to this message
-      startMessagePolling(responseData.aiMessageId);
+      startMessagePolling(response.aiMessageId);
       
       return true;
     } catch (error) {

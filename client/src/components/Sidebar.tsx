@@ -20,7 +20,7 @@ export function Sidebar() {
   const queryClient = useQueryClient();
 
   // Fetch recent sessions
-  const { data: sessions } = useQuery({
+  const { data: sessions } = useQuery<SessionType[]>({
     queryKey: ["/api/sessions"],
   });
   
@@ -104,7 +104,7 @@ export function Sidebar() {
         </div>
         
         <div className="space-y-1">
-          {sessions && Array.isArray(sessions) && 
+          {sessions && Array.isArray(sessions) ? 
             sessions
               .filter((session) => session.type === "private")
               .slice(0, 5)
@@ -121,7 +121,7 @@ export function Sidebar() {
                     <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
                   </div>
                 </Button>
-              )) as React.ReactNode}
+              )) : null}
           
           {(!sessions || !Array.isArray(sessions) || 
             sessions.filter((session) => session.type === "private").length === 0) && (
@@ -146,7 +146,7 @@ export function Sidebar() {
         </div>
         
         <div className="space-y-1">
-          {sessions && Array.isArray(sessions) && 
+          {sessions && Array.isArray(sessions) ? 
             sessions
               .filter((session) => session.type === "couples")
               .slice(0, 5)
@@ -163,7 +163,7 @@ export function Sidebar() {
                     <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
                   </div>
                 </Button>
-              )) as React.ReactNode}
+              )) : null}
           
           {(!sessions || !Array.isArray(sessions) || 
             sessions.filter((session) => session.type === "couples").length === 0) && (
