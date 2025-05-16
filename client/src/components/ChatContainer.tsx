@@ -136,6 +136,7 @@ function ChatHeader({ session, type }: { session: Session, type: "couples" | "pr
       // Navigate to home
       setLocation("/");
     } catch (error) {
+      console.error("Error deleting session:", error);
       toast({
         title: "Error",
         description: "Failed to delete session. Please try again.",
