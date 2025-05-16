@@ -56,25 +56,59 @@ export function Sidebar() {
       </div>
       
       {sessions && Array.isArray(sessions) && sessions.length > 0 && (
-        <div>
-          <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Recent Sessions</h2>
-          <div className="space-y-1">
-            {sessions.slice(0, 5).map((session: SessionType) => (
-              <Link href={`/session/${session.id}`} key={session.id}>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <div className="flex flex-col items-start">
-                    <span className="block">{session.title}</span>
-                    <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
-                  </div>
-                </Button>
-              </Link>
-            ))}
-          </div>
-        </div>
+        <>
+          {/* Private Sessions */}
+          {sessions.filter((session: SessionType) => session.type === "private").length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Private Sessions</h2>
+              <div className="space-y-1">
+                {sessions
+                  .filter((session: SessionType) => session.type === "private")
+                  .slice(0, 5)
+                  .map((session: SessionType) => (
+                    <Link href={`/session/${session.id}`} key={session.id}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        <div className="flex flex-col items-start">
+                          <span className="block">{session.title}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
+                        </div>
+                      </Button>
+                    </Link>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Couples Sessions */}
+          {sessions.filter((session: SessionType) => session.type === "couples").length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Couples Sessions</h2>
+              <div className="space-y-1">
+                {sessions
+                  .filter((session: SessionType) => session.type === "couples")
+                  .slice(0, 5)
+                  .map((session: SessionType) => (
+                    <Link href={`/session/${session.id}`} key={session.id}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        <div className="flex flex-col items-start">
+                          <span className="block">{session.title}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
+                        </div>
+                      </Button>
+                    </Link>
+                  ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
       
       <div className="mt-auto pt-6">
