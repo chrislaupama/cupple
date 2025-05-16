@@ -42,7 +42,7 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
       setIsDialogOpen(false);
       toast({
         title: "Success",
-        description: "New therapy session created.",
+        description: "New session created.",
       });
     },
     onError: (error) => {
@@ -64,7 +64,7 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
   if (isLoading) {
     return (
       <div className="flex-1 flex justify-center items-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-foreground/30 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
               <DialogTrigger asChild>
                 <Button className="w-full">
                   <Plus className="mr-2 h-4 w-4" />
-                  New Therapy Session
+                  New Session
                 </Button>
               </DialogTrigger>
               <DialogContent>

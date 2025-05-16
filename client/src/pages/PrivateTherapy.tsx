@@ -41,7 +41,7 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
       setIsDialogOpen(false);
       toast({
         title: "Success",
-        description: "New private therapy session created.",
+        description: "New private session created.",
       });
     },
     onError: (error) => {
@@ -63,7 +63,7 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
   if (isLoading) {
     return (
       <div className="flex-1 flex justify-center items-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-foreground/30 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
