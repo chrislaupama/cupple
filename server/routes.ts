@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
-import { generateAIResponse } from "./openai";
+import { getTherapyResponse } from "./directOpenAI";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -282,9 +282,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Function to generate AI responses using OpenAI
   async function handleAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
-      // Import the simpler therapy response generator
-      const { generateTherapyResponse } = await import('./gpt');
-      
       // Show initial loading state
       await storage.updateMessage(messageId, "Thinking...");
       
@@ -293,11 +290,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .filter(msg => msg.role !== "assistant")
         .pop()?.content || "Hello";
       
-      // Generate therapy response with our simpler approach
-      const aiResponse = await generateTherapyResponse(
-        lastUserMessage, 
-        type as "couples" | "private"
-      );
+      console.log(`Processing message for ${type} therapy, sessionId: ${sessionId}, messageId: ${messageId}`);
+      
+      // Generate therapy response using our direct OpenAI integration
+      const aiResponse = await getTherapyResponse(lastUserMessage, type);
       
       // Update the message with the AI-generated response
       await storage.updateMessage(messageId, aiResponse);
