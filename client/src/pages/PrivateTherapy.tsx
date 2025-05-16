@@ -1,13 +1,9 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { ChatContainer } from "@/components/ChatContainer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock, Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 type PrivateTherapyProps = {
@@ -15,8 +11,6 @@ type PrivateTherapyProps = {
 };
 
 export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
-  const [sessionTitle, setSessionTitle] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
