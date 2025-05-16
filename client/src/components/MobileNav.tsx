@@ -14,7 +14,7 @@ export function MobileNav() {
     window.location.href = "/couples";
   };
   
-  const goToPrivate = () => {
+  const goToPersonal = () => {
     window.location.href = "/private";
   };
 
@@ -30,10 +30,10 @@ export function MobileNav() {
               : "text-muted-foreground"
           )}>
           <Users className="h-5 w-5" />
-          <span className="text-xs mt-1">Couples</span>
+          <span className="text-xs mt-1">Cupple</span>
         </button>
         <button
-          onClick={goToPrivate}
+          onClick={goToPersonal}
           className={cn(
             "flex flex-col items-center justify-center py-2 bg-transparent border-none", 
             location === "/private" 
@@ -41,7 +41,7 @@ export function MobileNav() {
               : "text-muted-foreground"
           )}>
           <User className="h-5 w-5" />
-          <span className="text-xs mt-1">Private</span>
+          <span className="text-xs mt-1">Personal</span>
         </button>
         <button
           onClick={goToHome}

@@ -24,15 +24,15 @@ export function Sidebar() {
     queryKey: ["/api/sessions"],
   });
   
-  // Create new private session
-  const createPrivateSession = useMutation({
+  // Create new personal session
+  const createPersonalSession = useMutation({
     mutationFn: async () => {
-      const privateCount = Array.isArray(sessions) 
+      const personalCount = Array.isArray(sessions) 
         ? sessions.filter(s => s.type === "private").length + 1
         : 1;
       
       const response = await apiRequest("POST", "/api/sessions", {
-        title: `Private Session ${privateCount}`,
+        title: `Personal Session ${personalCount}`,
         type: "private",
       });
       return await response.json();
@@ -50,7 +50,7 @@ export function Sidebar() {
     }
   });
   
-  // Create new couples session
+  // Create new Cupple session
   const createCouplesSession = useMutation({
     mutationFn: async () => {
       const couplesCount = Array.isArray(sessions) 
@@ -58,7 +58,7 @@ export function Sidebar() {
         : 1;
       
       const response = await apiRequest("POST", "/api/sessions", {
-        title: `Couples Session ${couplesCount}`,
+        title: `Cupple Session ${couplesCount}`,
         type: "couples",
       });
       return await response.json();
@@ -88,16 +88,16 @@ export function Sidebar() {
   return (
     <nav className="hidden md:block w-64 border-r p-4 overflow-y-auto bg-background">
       
-      {/* Private Sessions Section */}
+      {/* Personal Sessions Section */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Private Sessions</h2>
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Personal Sessions</h2>
           <Button 
             size="icon" 
             variant="ghost" 
             className="h-5 w-5 rounded-full"
-            onClick={() => createPrivateSession.mutate()}
-            disabled={createPrivateSession.isPending}
+            onClick={() => createPersonalSession.mutate()}
+            disabled={createPersonalSession.isPending}
           >
             <Plus className="h-3 w-3" />
           </Button>
@@ -130,10 +130,10 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Couples Sessions Section */}
+      {/* Cupple Sessions Section */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Couples Sessions</h2>
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Cupple Sessions</h2>
           <Button 
             size="icon" 
             variant="ghost" 

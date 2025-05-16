@@ -21,7 +21,7 @@ export function EmptyStateCard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: `${type === "private" ? "Private" : "Couples"} Session`,
+            title: `${type === "private" ? "Personal" : "Cupple"} Session`,
             type
           }),
           credentials: "include"
@@ -89,7 +89,7 @@ export function EmptyStateCard() {
             disabled={isLoading}
           >
             <User className="h-6 w-6 text-muted-foreground group-hover:text-foreground" />
-            <span className="font-medium">Private Session</span>
+            <span className="font-medium">Personal Session</span>
           </Button>
           
           <Button

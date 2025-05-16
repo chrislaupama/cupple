@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Heart, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type CouplesTherapyProps = {
+type CuppleTherapyProps = {
   userId: string;
 };
 
-export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
+export default function CouplesTherapy({ userId }: CuppleTherapyProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Fetch existing couple therapy sessions
+  // Fetch existing Cupple therapy sessions
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["/api/sessions"],
     select: (data) => Array.isArray(data) ? data.filter((session: any) => session.type === "couples") : [],
@@ -24,7 +24,7 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
   const createSession = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/sessions", {
-        title: "Couples Session",
+        title: "Cupple Session",
         type: "couples"
       });
       return response.json();

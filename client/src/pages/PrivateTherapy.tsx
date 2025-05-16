@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Lock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type PrivateTherapyProps = {
+type PersonalTherapyProps = {
   userId: string;
 };
 
-export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
+export default function PrivateTherapy({ userId }: PersonalTherapyProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // Fetch existing private therapy sessions
+  // Fetch existing personal therapy sessions
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["/api/sessions"],
     select: (data) => Array.isArray(data) ? data.filter((session: any) => session.type === "private") : [],
@@ -24,7 +24,7 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
   const createSession = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/sessions", {
-        title: "Private Session",
+        title: "Personal Session",
         type: "private"
       });
       return response.json();
