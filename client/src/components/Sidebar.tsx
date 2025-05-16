@@ -3,6 +3,7 @@ import { Plus, HelpCircle, Settings, Users, User } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,7 +28,7 @@ export function Sidebar() {
   const createPrivateSession = useMutation({
     mutationFn: async () => {
       const privateCount = Array.isArray(sessions) 
-        ? sessions.filter((s: any) => s.type === "private").length + 1
+        ? sessions.filter(s => s.type === "private").length + 1
         : 1;
       
       const response = await apiRequest("POST", "/api/sessions", {
@@ -44,7 +45,7 @@ export function Sidebar() {
       toast({
         title: "Error",
         description: "Failed to create new session. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   });
@@ -53,7 +54,7 @@ export function Sidebar() {
   const createCouplesSession = useMutation({
     mutationFn: async () => {
       const couplesCount = Array.isArray(sessions) 
-        ? sessions.filter((s: any) => s.type === "couples").length + 1
+        ? sessions.filter(s => s.type === "couples").length + 1
         : 1;
       
       const response = await apiRequest("POST", "/api/sessions", {
@@ -70,50 +71,40 @@ export function Sidebar() {
       toast({
         title: "Error",
         description: "Failed to create new session. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   });
-  
-  // Format date helper function
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    const day = 1000 * 60 * 60 * 24;
-    const week = day * 7;
-    
-    if (diff < day) {
-      return "Today";
-    } else if (diff < day * 2) {
-      return "Yesterday";
-    } else if (diff < week) {
-      return date.toLocaleDateString(undefined, { weekday: "long" });
-    } else {
-      return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    }
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
   };
 
   return (
-    <nav className="flex flex-col h-full p-4 border-r">
-      <div className="flex-1 overflow-auto">
-        {/* Private Sessions Section */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Private Sessions</h2>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-5 w-5 text-muted-foreground"
-              onClick={() => createPrivateSession.mutate()}
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          
-          <div className="space-y-1">
-            {Array.isArray(sessions) && 
+    <nav className="hidden md:block w-64 border-r p-4 overflow-y-auto bg-background">
+      
+      {/* Private Sessions Section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Private Sessions</h2>
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-5 w-5 rounded-full"
+            onClick={() => createPrivateSession.mutate()}
+            disabled={createPrivateSession.isPending}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+        
+        <div className="space-y-1">
+          {sessions && Array.isArray(sessions) && 
             sessions
               .filter((session: SessionType) => session.type === "private")
               .slice(0, 5)
@@ -144,17 +135,18 @@ export function Sidebar() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Couples Sessions</h2>
           <Button 
-            variant="ghost" 
             size="icon" 
-            className="h-5 w-5 text-muted-foreground"
+            variant="ghost" 
+            className="h-5 w-5 rounded-full"
             onClick={() => createCouplesSession.mutate()}
+            disabled={createCouplesSession.isPending}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3 w-3" />
           </Button>
         </div>
         
         <div className="space-y-1">
-          {Array.isArray(sessions) && 
+          {sessions && Array.isArray(sessions) && 
             sessions
               .filter((session: SessionType) => session.type === "couples")
               .slice(0, 5)
@@ -180,24 +172,19 @@ export function Sidebar() {
         </div>
       </div>
       
-      <Separator className="my-4" />
-      
-      {/* Fixed Links at the bottom */}
-      <div className="space-y-1">
+      <div className="mt-auto pt-6">
+        <Separator className="my-4" />
         <Link href="/settings">
           <Button
             variant="ghost"
-            size="sm"
             className="w-full justify-start"
           >
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </Button>
         </Link>
-        
         <Button
           variant="ghost"
-          size="sm"
           className="w-full justify-start"
         >
           <HelpCircle className="mr-2 h-4 w-4" />
