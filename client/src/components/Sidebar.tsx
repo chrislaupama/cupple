@@ -39,7 +39,7 @@ export function Sidebar() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      window.location.href = `/session/${data.id}`;
+      navigate(`/session/${data.id}`);
     },
     onError: () => {
       toast({
@@ -65,7 +65,7 @@ export function Sidebar() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      window.location.href = `/session/${data.id}`;
+      navigate(`/session/${data.id}`);
     },
     onError: () => {
       toast({
