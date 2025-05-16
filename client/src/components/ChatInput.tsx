@@ -59,7 +59,7 @@ export function ChatInput({ onSendMessage, isPrivate }: ChatInputProps) {
           {isPrivate && (
             <div className="flex-shrink-0 px-2 self-center">
               <Badge variant="outline" className="mr-2 py-1 px-2.5 rounded-full bg-background border-muted-foreground/30 text-muted-foreground font-normal text-xs">
-                Private
+                Personal
               </Badge>
             </div>
           )}

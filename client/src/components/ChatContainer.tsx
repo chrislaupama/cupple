@@ -219,7 +219,7 @@ function ChatHeader({ session, type }: { session: Session, type: "couples" | "pr
                 id="name"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                placeholder={type === "couples" ? "Couples Session" : "Private Session"}
+                placeholder={type === "couples" ? "Cupple Session" : "Personal Session"}
               />
             </div>
           </div>
