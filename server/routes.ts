@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
-import { getSimpleTherapyResponse } from "./simplifiedOpenAI";
+import { getSimpleTherapyResponse } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server

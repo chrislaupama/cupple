@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { Server } from "http";
-import { generateAIResponse } from "./openai";
+import { getSimpleTherapyResponse } from "./openai";
 import { storage } from "./storage";
 
 type MessageData = {
