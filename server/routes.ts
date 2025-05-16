@@ -270,73 +270,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Background function to generate AI response and update the message incrementally
+  // Generate AI response using the existing generateTherapistResponse function
   async function generateAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
-      // Initialize OpenAI client
-      const OpenAI = require('openai');
-      const openaiClient = new OpenAI.default({ apiKey: process.env.OPENAI_API_KEY });
+      // Update message initially to show loading
+      await storage.updateMessage(messageId, "...");
       
-      const systemPrompt = type === "couples" 
-        ? "You are Dr. AI Therapist, a compassionate couples therapist helping improve communication."
-        : "You are Dr. AI Therapist, a compassionate individual therapist providing support and guidance.";
+      // Prepare messages for the API call
+      const formattedMessages = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
       
-      // Create properly formatted messages for OpenAI API
-      const apiMessages = [];
-      
-      // Add system message
-      apiMessages.push({
-        role: "system",
-        content: systemPrompt
-      });
-      
-      // Add conversation history
-      for (const msg of messages) {
-        apiMessages.push({
-          role: msg.role === "assistant" ? "assistant" : "user",
+      // Call our existing OpenAI integration function with properly formatted messages
+      try {
+        // Format messages correctly for OpenAI
+        const apiMessages = formattedMessages.map(msg => ({
+          role: msg.role === "assistant" ? "assistant" as const : "user" as const,
           content: msg.content
-        });
+        }));
+        
+        const aiResponse = await generateTherapistResponse(apiMessages, type);
+        
+        // Update with the final AI response
+        await storage.updateMessage(messageId, aiResponse);
+        
+        // Update session's last activity time
+        await storage.updateSessionLastActivity(sessionId);
+        
+        console.log("AI response generation complete for message: " + messageId);
+      } catch (aiError) {
+        console.error("Error from OpenAI API:", aiError);
+        await storage.updateMessage(messageId, "I apologize, but I'm having trouble generating a response right now. Please try again shortly.");
       }
-      
-      // Create streaming response
-      const stream = await openaiClient.chat.completions.create({
-        model: "gpt-4o",
-        messages: apiMessages,
-        stream: true,
-      });
-      
-      // Track the full response
-      let responseContent = "..."; // Start with ellipsis to indicate loading
-      await storage.updateMessage(messageId, responseContent);
-      
-      // Process the stream
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          // Update response content
-          responseContent = responseContent === "..." ? content : responseContent + content;
-          
-          // Update the message in the database every few chunks to avoid too many writes
-          await storage.updateMessage(messageId, responseContent);
-          
-          // Add a small delay to make streaming more visible
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      }
-      
-      // Final update to ensure complete message is saved
-      if (responseContent === "...") {
-        responseContent = "I'm not sure how to respond to that.";
-      }
-      
-      await storage.updateMessage(messageId, responseContent);
-      
-      // Update session's last activity time
-      await storage.updateSessionLastActivity(sessionId);
-      
-      console.log("AI response generation complete for message: " + messageId);
     } catch (error) {
-      console.error("Error generating AI response:", error);
+      console.error("Error in generateAIResponse:", error);
       // Update message with error notification
       await storage.updateMessage(messageId, "Sorry, I encountered an error generating a response. Please try again.");
     }
