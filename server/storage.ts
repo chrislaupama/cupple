@@ -75,7 +75,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(therapySessions.isActive, true),
-          and(
+          or(
             eq(therapySessions.creatorId, userId),
             eq(therapySessions.partnerId, userId)
           )
