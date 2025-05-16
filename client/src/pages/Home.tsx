@@ -8,6 +8,7 @@ import { Header } from "@/components/Header";
 import CouplesTherapy from "@/pages/CouplesTherapy";
 import PrivateTherapy from "@/pages/PrivateTherapy";
 import { ChatContainer } from "@/components/ChatContainer";
+import { EmptyStateCard } from "@/components/EmptyStateCard";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
@@ -15,6 +16,12 @@ export default function Home() {
   const [location, navigate] = useLocation();
   const params = useParams();
   const sessionId = params?.id ? parseInt(params.id) : null;
+  
+  // Fetch all sessions
+  const { data: sessions } = useQuery({
+    queryKey: ["/api/sessions"],
+    enabled: isAuthenticated
+  });
   
   // Fetch individual session if we're on a session route
   const { data: session, isLoading: isSessionLoading } = useQuery({
@@ -78,7 +85,7 @@ export default function Home() {
     );
   }
 
-  // Default home view (couples or private tabs)
+  // Default home view (empty state or tabs)
   return (
     <div className="flex flex-col h-screen">
       <Header />
@@ -87,21 +94,25 @@ export default function Home() {
         <Sidebar />
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Tabs 
-            defaultValue={location === "/private" ? "private" : "couples"} 
-            className="flex-1 flex flex-col"
-          >
-            <TabsList className="md:hidden mx-4 mt-2 justify-center">
-              <TabsTrigger value="couples" className="flex-1">Couples</TabsTrigger>
-              <TabsTrigger value="private" className="flex-1">Private</TabsTrigger>
-            </TabsList>
-            <TabsContent value="couples" className="flex-1 p-0 m-0">
-              <CouplesTherapy userId={(user as any)?.id || ""} />
-            </TabsContent>
-            <TabsContent value="private" className="flex-1 p-0 m-0">
-              <PrivateTherapy userId={(user as any)?.id || ""} />
-            </TabsContent>
-          </Tabs>
+          {Array.isArray(sessions) && sessions.length === 0 ? (
+            <EmptyStateCard />
+          ) : (
+            <Tabs 
+              defaultValue={location === "/private" ? "private" : "couples"} 
+              className="flex-1 flex flex-col"
+            >
+              <TabsList className="md:hidden mx-4 mt-2 justify-center">
+                <TabsTrigger value="couples" className="flex-1">Couples</TabsTrigger>
+                <TabsTrigger value="private" className="flex-1">Private</TabsTrigger>
+              </TabsList>
+              <TabsContent value="couples" className="flex-1 p-0 m-0">
+                <CouplesTherapy userId={(user as any)?.id || ""} />
+              </TabsContent>
+              <TabsContent value="private" className="flex-1 p-0 m-0">
+                <PrivateTherapy userId={(user as any)?.id || ""} />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
       
