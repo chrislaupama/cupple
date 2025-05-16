@@ -4,11 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
-import { generateTherapistResponse } from "./openai";
-import OpenAI from "openai";
-
-// Import our existing OpenAI client from the openai.ts file
-import { openai } from "./openai";
+import { generateAIResponse } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -225,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
       
       // Start generating AI response in the background without waiting
-      generateAIResponse(sessionId, aiMessage.id, formattedMessages, session.type);
+      handleAIResponse(sessionId, aiMessage.id, formattedMessages, session.type);
       
       // Return both message IDs immediately
       res.json({
@@ -274,94 +270,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Function to generate varied AI responses
-  async function generateAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
+  // Function to generate AI responses using OpenAI
+  async function handleAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
       // Show initial loading state
       await storage.updateMessage(messageId, "Thinking...");
       
-      // Get the latest user message
-      const latestUserMessage = messages[messages.length - 1]?.content || "Hello";
-      const lowerCaseMessage = latestUserMessage.toLowerCase();
+      // Format messages for the OpenAI API
+      const formattedMessages = messages.map(msg => ({
+        role: msg.role === "assistant" ? "assistant" : "user",
+        content: msg.content
+      }));
       
-      // Create response based on message content
-      let response;
-      
-      // Add a small delay to simulate thinking time
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Check for specific topics in the message and respond accordingly
-      if (lowerCaseMessage.includes("hello") || lowerCaseMessage.includes("hi") || lowerCaseMessage.length < 10) {
-        if (type === "couples") {
-          response = "Hello there! I'm your couples therapist. How can I help you and your partner today? Feel free to share what's on your mind.";
-        } else {
-          response = "Hello! Welcome to your private therapy session. What brings you here today? I'm here to listen and support you.";
-        }
-      } 
-      else if (lowerCaseMessage.includes("feel") || lowerCaseMessage.includes("feeling")) {
-        if (type === "couples") {
-          response = "Thank you for sharing your feelings. It's important that both partners feel heard and understood. Can you tell me more about when these feelings started, and how your partner responds when you express them?";
-        } else {
-          response = "I appreciate you sharing your feelings with me. Acknowledging our emotions is an important step. When did you first notice these feelings, and have they changed over time?";
-        }
-      }
-      else if (lowerCaseMessage.includes("angry") || lowerCaseMessage.includes("mad") || lowerCaseMessage.includes("upset")) {
-        if (type === "couples") {
-          response = "Anger is often a secondary emotion that masks deeper feelings like hurt or fear. When you're feeling this way with your partner, what do you think might be beneath that anger? And how do you typically express it?";
-        } else {
-          response = "It sounds like you're experiencing some strong emotions. Anger can be a natural response to feeling threatened or having boundaries crossed. What situations tend to trigger these feelings for you?";
-        }
-      }
-      else if (lowerCaseMessage.includes("help") || lowerCaseMessage.includes("advice")) {
-        if (type === "couples") {
-          response = "I'm here to help you both navigate your relationship challenges. One suggestion is to practice active listening - taking turns to speak while the other person listens without interrupting, then summarizing what you heard before responding. Would you like to try this approach?";
-        } else {
-          response = "I'm here to support you. Sometimes the most helpful thing is having space to explore your thoughts with someone who listens without judgment. What specific areas of your life are you looking for help with right now?";
-        }
-      }
-      else if (lowerCaseMessage.includes("thank")) {
-        if (type === "couples") {
-          response = "You're very welcome. It takes courage for couples to seek support and work on their relationship together. Is there anything specific you'd like to focus on in our conversation today?";
-        } else {
-          response = "You're welcome. Your willingness to engage in this process shows real commitment to your well-being. Is there anything else on your mind you'd like to explore today?";
-        }
-      }
-      else if (lowerCaseMessage.includes("?")) {
-        // It's a question
-        if (type === "couples") {
-          response = "That's a thoughtful question. In couples therapy, we often find that questions like this reveal important values and needs. What prompted you to ask this, and how does your partner feel about this topic?";
-        } else {
-          response = "That's an insightful question. Sometimes the questions we ask reveal what matters most to us. What thoughts or experiences led you to consider this question?";
-        }
-      }
-      else {
-        // Default responses with some variation
-        const defaultResponses = type === "couples" ? [
-          "Thank you for sharing that. In couples therapy, it's important that both partners feel heard. How does your partner respond when you express these thoughts?",
-          "I appreciate your openness. When these situations arise between you and your partner, what patterns do you notice in how you both respond?",
-          "That's helpful context. In your relationship, how do you both typically handle these kinds of situations? Are there communication patterns you've noticed?",
-          "I understand. Every relationship has its unique challenges. How would you like things to be different between you and your partner?"
-        ] : [
-          "Thank you for sharing that with me. What emotions come up for you when you think about this situation?",
-          "I appreciate you opening up. How long has this been a concern for you, and has anything changed recently?",
-          "That's important to acknowledge. When you experience these thoughts, what impact do they have on your daily life?",
-          "I understand. These experiences can be challenging. What strategies have you tried so far to address this?"
-        ];
+      try {
+        // Call the OpenAI API to generate a response
+        const aiResponse = await generateAIResponse(formattedMessages, type);
         
-        // Select a response based on some factor to vary it (using session ID)
-        const responseIndex = (sessionId + messages.length) % defaultResponses.length;
-        response = defaultResponses[responseIndex];
+        // Update the message with the AI-generated response
+        await storage.updateMessage(messageId, aiResponse);
+        
+        // Update session's last activity time
+        await storage.updateSessionLastActivity(sessionId);
+        
+        console.log("AI response complete for message: " + messageId);
+      } catch (aiError) {
+        console.error("Error from OpenAI API:", aiError);
+        await storage.updateMessage(messageId, "I apologize, but I'm having trouble generating a response right now. Please try again shortly.");
       }
-      
-      // Update the message with our response
-      await storage.updateMessage(messageId, response);
-      
-      // Update session activity time
-      await storage.updateSessionLastActivity(sessionId);
-      
-      console.log("AI response complete for message: " + messageId);
     } catch (error) {
-      console.error("Error generating AI response:", error);
+      console.error("Error in AI response handling:", error);
       await storage.updateMessage(messageId, "I'm sorry, I'm having trouble responding right now. Let's try again in a moment.");
     }
   }

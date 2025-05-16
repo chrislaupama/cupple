@@ -1,142 +1,117 @@
 import OpenAI from "openai";
-import { WebSocket } from "ws";
 import { storage } from "./storage";
 
+// Initialize the OpenAI client with the API key
 export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Function to generate AI therapist responses
-// Non-streaming version for reference
-export async function generateTherapistResponse(
+/**
+ * Generate a response from the AI therapist
+ * @param messages The conversation history
+ * @param type The type of therapy session ('couples' or 'private')
+ * @returns The AI-generated response
+ */
+export async function generateAIResponse(
   messages: Array<{ role: string; content: string }>,
-  type: string,
-  client?: WebSocket,
-  sessionId?: number,
-  isStream: boolean = false,
-  onChunk?: (chunk: string, fullContent: string) => void
+  type: string
 ): Promise<string> {
   try {
-    console.log(`Generating ${type} therapy response with OpenAI API`);
+    console.log(`Generating ${type} therapy response with OpenAI's GPT-4o model`);
     
-    // Prepare messages in the correct format for OpenAI API
-    const systemMessage = {
-      role: "system" as const,
-      content: getTherapistSystemPrompt(type)
-    };
+    // Create the system prompt based on therapy type
+    const systemPrompt = getSystemPrompt(type);
     
-    const formattedMessages = messages.map(msg => ({
-      role: (msg.role === "user" || msg.role === "assistant") 
-        ? msg.role as "user" | "assistant" 
-        : "user" as const,
-      content: msg.content
-    }));
+    // Format messages for the OpenAI API
+    const formattedMessages = [
+      { role: "system" as const, content: systemPrompt },
+      ...messages.map(msg => ({
+        role: (msg.role === "assistant" ? "assistant" : "user") as "assistant" | "user",
+        content: msg.content
+      }))
+    ];
     
-    // If streaming is requested and we have a client
-    if (isStream && client) {
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      const stream = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [systemMessage, ...formattedMessages],
-        stream: true,
-      });
+    // Call the OpenAI API
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: formattedMessages,
+      temperature: 0.7, // Slightly creative but not too random
+      max_tokens: 500  // Reasonable length for a therapy response
+    });
+    
+    // Extract the response text
+    const responseText = response.choices[0].message.content || 
+      "I'm not sure how to respond to that. Could we explore this topic further?";
       
-      let fullResponse = '';
-      let messageId: number | null = null;
-      
-      // Save empty message to get ID
-      if (sessionId) {
-        const savedMessage = await storage.createMessage({
-          sessionId: sessionId,
-          isAi: true,
-          content: ""
-        });
-        messageId = savedMessage.id;
+    console.log(`AI response generated (first 100 chars): ${responseText.substring(0, 100)}...`);
+    
+    return responseText;
+  } catch (error) {
+    console.error("Error generating AI response:", error);
+    
+    // Check for common API issues
+    if (error instanceof Error) {
+      const errorMessage = error.message;
+      if (errorMessage.includes('API key')) {
+        console.error("OpenAI API key issue detected. Check the OPENAI_API_KEY environment variable.");
+      } else if (errorMessage.includes('rate limit')) {
+        console.error("OpenAI rate limit reached. Throttling requests may be necessary.");
       }
-      
-      // Process the stream with a delay for visible streaming effect
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          fullResponse += content;
-          
-          // Send incremental update to client
-          if (client && client.readyState === WebSocket.OPEN && messageId) {
-            // Send message with the latest chunk
-            client.send(JSON.stringify({
-              type: "stream",
-              messageId: messageId,
-              content: content,
-              fullContent: fullResponse,
-              sessionId: sessionId
-            }));
-            
-            // Add a small delay to make the streaming more visible to humans
-            // This will slow down the streaming just enough to be noticeable
-            await new Promise(resolve => setTimeout(resolve, 10));
-          }
-        }
-      }
-      
-      // Update the message with complete content
-      if (sessionId && messageId) {
-        await storage.updateMessage(messageId, fullResponse);
-        
-        // Send completion notification to client
-        if (client && client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({
-            type: "stream_end",
-            messageId: messageId,
-            sessionId: sessionId,
-            fullContent: fullResponse
-          }));
-        }
-      }
-      
-      console.log(`OpenAI streaming response completed: ${fullResponse.substring(0, 100)}...`);
-      
-      return fullResponse;
-    } else {
-      // Non-streaming version
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [systemMessage, ...formattedMessages],
-      });
-
-      const responseText = response.choices[0].message.content || "I'm not sure how to respond to that.";
-      console.log(`OpenAI response received: ${responseText.substring(0, 100)}...`);
-      
-      return responseText;
-    }
-  } catch (error: any) {
-    console.error("Error generating therapist response:", error);
-    
-    // Check for specific API key issues
-    if (error.toString && error.toString().includes('API key')) {
-      console.error("API key issue detected. Please check OPENAI_API_KEY is valid and correctly set.");
     }
     
-    throw new Error("Failed to generate therapist response");
+    throw new Error("Failed to generate AI response");
   }
 }
 
-// Helper function to get the system prompt based on therapy type
-function getTherapistSystemPrompt(type: string): string {
+/**
+ * Get the appropriate system prompt based on therapy type
+ */
+function getSystemPrompt(type: string): string {
   if (type === "couples") {
-    return `You are Dr. AI Therapist, a compassionate and skilled couples therapist. 
-    Your goal is to help couples improve their communication, resolve conflicts, and strengthen their relationship.
-    Your responses should be empathetic, insightful, and focused on practical advice.
-    Ask thoughtful questions to understand both perspectives and provide balanced guidance.
-    Keep responses concise (2-3 paragraphs maximum) and conversational.
-    Never share any information from private therapy sessions with either partner.
-    If asked about topics outside your expertise, acknowledge limitations and redirect to appropriate professional help.`;
+    return `You are Dr. AI Therapist, a compassionate and skilled couples therapist with years of experience helping relationships thrive.
+
+ROLE:
+- You provide thoughtful, empathetic guidance to couples working through relationship challenges
+- You focus on improving communication, resolving conflicts, and strengthening bonds
+- You ask insightful questions that help both partners understand each other better
+- You offer practical, evidence-based relationship advice when appropriate
+
+COMMUNICATION STYLE:
+- Warm, supportive, and professional
+- Balanced attention to both partners' perspectives 
+- Concise responses (2-3 paragraphs maximum)
+- Natural, conversational tone that builds rapport
+- Thoughtful, specific questions that prompt reflection
+
+GUIDELINES:
+- Maintain complete confidentiality
+- Never take sides; remain neutral and validate both perspectives
+- Focus on patterns of interaction rather than assigning blame
+- Emphasize strengths in the relationship alongside areas for growth
+- Acknowledge when topics require specialized expertise beyond your scope
+- Keep responses focused on the present concern without unnecessary digressions`;
   } else {
-    return `You are Dr. AI Therapist, a compassionate and insightful individual therapist in a private session.
-    Your goal is to provide a safe space for clients to express feelings they might not be comfortable sharing in couples therapy.
-    Your responses should be empathetic, non-judgmental, and supportive.
-    Ask thoughtful questions to help clients explore their feelings and perspectives.
-    Keep responses concise (2-3 paragraphs maximum) and conversational.
-    Never share this private information with the client's partner or in couples sessions.
-    Emphasize healthy communication and relationship patterns while respecting privacy.
-    If asked about topics outside your expertise, acknowledge limitations and redirect to appropriate professional help.`;
+    return `You are Dr. AI Therapist, a compassionate and insightful individual therapist with extensive training in supporting personal growth and emotional wellbeing.
+
+ROLE:
+- You provide a safe, non-judgmental space for the client to explore thoughts and feelings
+- You offer empathetic support focused on the individual's needs and concerns
+- You ask thoughtful questions that promote self-reflection and insight
+- You suggest evidence-based coping strategies when appropriate
+- You emphasize personal agency and self-compassion
+
+COMMUNICATION STYLE:
+- Warm, supportive, and professional
+- Affirming of the client's experiences and emotions
+- Concise responses (2-3 paragraphs maximum)
+- Natural, conversational tone that builds rapport
+- Thoughtful, specific questions that encourage deeper exploration
+
+GUIDELINES:
+- Maintain complete confidentiality
+- Focus on empowering the individual to develop their own insights
+- Balance validation with gentle challenges to unhelpful thought patterns
+- Emphasize strengths and resilience alongside areas for growth
+- Acknowledge when topics require specialized expertise beyond your scope
+- Keep responses focused on the present concern without unnecessary digressions`;
   }
 }
