@@ -274,7 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Simplified function to generate AI responses
+  // Function to generate varied AI responses
   async function generateAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
       // Show initial loading state
@@ -282,26 +282,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get the latest user message
       const latestUserMessage = messages[messages.length - 1]?.content || "Hello";
+      const lowerCaseMessage = latestUserMessage.toLowerCase();
       
-      // Create a basic response based on the type of therapy
+      // Create response based on message content
       let response;
-      
-      if (type === "couples") {
-        response = `Thank you for sharing that with me. As your couples therapist, I want to help you both work through this together. 
-        
-        ${latestUserMessage.includes("?") ? "That's a great question. " : ""}I think it's important to consider how this affects both of you and find common ground for better communication. 
-        
-        Could you tell me more about how this situation makes you feel?`;
-      } else {
-        response = `I appreciate you opening up about this. In our private therapy session, this is a safe space to explore your feelings.
-        
-        ${latestUserMessage.includes("?") ? "That's an insightful question. " : ""}It sounds like this is something that's been on your mind. 
-        
-        Would you like to talk more about how this affects your daily life?`;
-      }
       
       // Add a small delay to simulate thinking time
       await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Check for specific topics in the message and respond accordingly
+      if (lowerCaseMessage.includes("hello") || lowerCaseMessage.includes("hi") || lowerCaseMessage.length < 10) {
+        if (type === "couples") {
+          response = "Hello there! I'm your couples therapist. How can I help you and your partner today? Feel free to share what's on your mind.";
+        } else {
+          response = "Hello! Welcome to your private therapy session. What brings you here today? I'm here to listen and support you.";
+        }
+      } 
+      else if (lowerCaseMessage.includes("feel") || lowerCaseMessage.includes("feeling")) {
+        if (type === "couples") {
+          response = "Thank you for sharing your feelings. It's important that both partners feel heard and understood. Can you tell me more about when these feelings started, and how your partner responds when you express them?";
+        } else {
+          response = "I appreciate you sharing your feelings with me. Acknowledging our emotions is an important step. When did you first notice these feelings, and have they changed over time?";
+        }
+      }
+      else if (lowerCaseMessage.includes("angry") || lowerCaseMessage.includes("mad") || lowerCaseMessage.includes("upset")) {
+        if (type === "couples") {
+          response = "Anger is often a secondary emotion that masks deeper feelings like hurt or fear. When you're feeling this way with your partner, what do you think might be beneath that anger? And how do you typically express it?";
+        } else {
+          response = "It sounds like you're experiencing some strong emotions. Anger can be a natural response to feeling threatened or having boundaries crossed. What situations tend to trigger these feelings for you?";
+        }
+      }
+      else if (lowerCaseMessage.includes("help") || lowerCaseMessage.includes("advice")) {
+        if (type === "couples") {
+          response = "I'm here to help you both navigate your relationship challenges. One suggestion is to practice active listening - taking turns to speak while the other person listens without interrupting, then summarizing what you heard before responding. Would you like to try this approach?";
+        } else {
+          response = "I'm here to support you. Sometimes the most helpful thing is having space to explore your thoughts with someone who listens without judgment. What specific areas of your life are you looking for help with right now?";
+        }
+      }
+      else if (lowerCaseMessage.includes("thank")) {
+        if (type === "couples") {
+          response = "You're very welcome. It takes courage for couples to seek support and work on their relationship together. Is there anything specific you'd like to focus on in our conversation today?";
+        } else {
+          response = "You're welcome. Your willingness to engage in this process shows real commitment to your well-being. Is there anything else on your mind you'd like to explore today?";
+        }
+      }
+      else if (lowerCaseMessage.includes("?")) {
+        // It's a question
+        if (type === "couples") {
+          response = "That's a thoughtful question. In couples therapy, we often find that questions like this reveal important values and needs. What prompted you to ask this, and how does your partner feel about this topic?";
+        } else {
+          response = "That's an insightful question. Sometimes the questions we ask reveal what matters most to us. What thoughts or experiences led you to consider this question?";
+        }
+      }
+      else {
+        // Default responses with some variation
+        const defaultResponses = type === "couples" ? [
+          "Thank you for sharing that. In couples therapy, it's important that both partners feel heard. How does your partner respond when you express these thoughts?",
+          "I appreciate your openness. When these situations arise between you and your partner, what patterns do you notice in how you both respond?",
+          "That's helpful context. In your relationship, how do you both typically handle these kinds of situations? Are there communication patterns you've noticed?",
+          "I understand. Every relationship has its unique challenges. How would you like things to be different between you and your partner?"
+        ] : [
+          "Thank you for sharing that with me. What emotions come up for you when you think about this situation?",
+          "I appreciate you opening up. How long has this been a concern for you, and has anything changed recently?",
+          "That's important to acknowledge. When you experience these thoughts, what impact do they have on your daily life?",
+          "I understand. These experiences can be challenging. What strategies have you tried so far to address this?"
+        ];
+        
+        // Select a response based on some factor to vary it (using session ID)
+        const responseIndex = (sessionId + messages.length) % defaultResponses.length;
+        response = defaultResponses[responseIndex];
+      }
       
       // Update the message with our response
       await storage.updateMessage(messageId, response);
