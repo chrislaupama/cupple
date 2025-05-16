@@ -24,15 +24,13 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
   const createSession = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/sessions", {
-        title: sessionTitle || "Private Session",
-        type: "private",
+        title: "Private Session",
+        type: "private"
       });
-      return await response.json();
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-      setSessionTitle("");
-      setIsDialogOpen(false);
       
       // Navigate to the new session
       window.location.href = `/session/${data.id}`;
@@ -51,9 +49,7 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
     },
   });
   
-  const handleCreateSession = () => {
-    createSession.mutate();
-  };
+
   
   // Get the most recent or active session
   const activeSession = sessions && sessions.length > 0 ? sessions[0] : null;

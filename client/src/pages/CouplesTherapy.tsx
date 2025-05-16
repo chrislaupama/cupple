@@ -25,9 +25,9 @@ export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/sessions", {
         title: "Couples Session",
-        type: "couples",
+        type: "couples"
       });
-      return await response.json();
+      return response.json();
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
