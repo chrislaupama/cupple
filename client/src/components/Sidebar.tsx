@@ -121,7 +121,7 @@ export function Sidebar() {
                     <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
                   </div>
                 </Button>
-              ))}
+              )) as React.ReactNode}
           
           {(!sessions || !Array.isArray(sessions) || 
             sessions.filter((session) => session.type === "private").length === 0) && (
@@ -163,7 +163,7 @@ export function Sidebar() {
                     <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
                   </div>
                 </Button>
-              ))}
+              )) as React.ReactNode}
           
           {(!sessions || !Array.isArray(sessions) || 
             sessions.filter((session) => session.type === "couples").length === 0) && (

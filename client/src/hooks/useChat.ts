@@ -3,6 +3,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWebSocket, type MessageData } from "./useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
 
+// Type for the message API response
+type MessageResponse = {
+  userMessageId: number;
+  aiMessageId: number;
+};
+
 export type Message = {
   id: number;
   sessionId: number;
@@ -148,7 +154,54 @@ export function useChat(sessionId: number, userId: string) {
     },
   });
 
-  // Set up function for sending messages using server-sent events (SSE)
+  // Setup polling for AI message updates
+  const startMessagePolling = (messageId: number) => {
+    let intervalId: NodeJS.Timeout;
+    let previousContent = "";
+    
+    setIsStreaming(true);
+    
+    const pollMessage = async () => {
+      try {
+        const response = await fetch(`/api/messages/${messageId}/stream`);
+        const data = await response.json();
+        
+        if (data.content !== previousContent) {
+          previousContent = data.content;
+          
+          setMessages(prevMessages => 
+            prevMessages.map(msg => 
+              msg.id === messageId 
+                ? { ...msg, content: data.content }
+                : msg
+            )
+          );
+        }
+        
+        if (data.isComplete) {
+          clearInterval(intervalId);
+          setIsStreaming(false);
+        }
+      } catch (error) {
+        console.error("Error polling message:", error);
+        clearInterval(intervalId);
+        setIsStreaming(false);
+      }
+    };
+    
+    // Poll every 300ms
+    intervalId = setInterval(pollMessage, 300);
+    
+    // Initial poll
+    pollMessage();
+    
+    // Return cleanup function
+    return () => {
+      clearInterval(intervalId);
+    };
+  };
+  
+  // Function to send chat message with simpler polling approach
   const sendChatMessage = async (content: string) => {
     if (!session) {
       console.log("No active session found");
@@ -159,9 +212,9 @@ export function useChat(sessionId: number, userId: string) {
       // Set streaming state to true when sending a message
       setIsStreaming(true);
       
-      // Optimistically add user message to UI with temporary ID
+      // Optimistically add user message to UI
       const tempUserMessage = {
-        id: Date.now(), // Temporary ID to be replaced
+        id: Date.now(), // Temporary ID
         sessionId,
         senderId: userId,
         content,
@@ -188,104 +241,36 @@ export function useChat(sessionId: number, userId: string) {
         }
       };
       
-      // Add typing indicator after a short delay
-      const typingTimeout = setTimeout(() => {
-        setMessages(prev => {
-          const lastMessage = prev[prev.length - 1];
-          if (!lastMessage || !lastMessage.isAi) {
-            return [...prev, typingIndicator];
-          }
-          return prev;
-        });
-      }, 500);
+      // Add typing indicator immediately
+      setMessages(prev => [...prev, typingIndicator]);
       
-      // Send message to API using Server-Sent Events for streaming response
-      const eventSource = new EventSource(`/api/sessions/${sessionId}/send-message?content=${encodeURIComponent(content)}`);
+      // Send the message to the API
+      const responseData = await apiRequest("POST", `/api/sessions/${sessionId}/messages`, { content });
       
-      eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("SSE message received:", data);
-        
-        // Handle different event types
-        if (data.type === "message-ids") {
-          // Clear typing indicator
-          clearTimeout(typingTimeout);
-          
-          // Update the temporary user message with the real ID
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === tempUserMessage.id
-                ? { ...msg, id: data.userMessageId }
-                : msg
-            ).filter(msg => msg.id !== -999) // Remove typing indicator
-          );
-          
-          // Add placeholder for AI response
-          setMessages(prev => [
-            ...prev,
-            {
-              id: data.aiMessageId,
-              sessionId,
-              isAi: true,
-              content: "",
-              createdAt: new Date().toISOString(),
-              sender: {
-                id: "ai",
-                name: "Dr. AI Therapist"
-              }
-            }
-          ]);
-        }
-        else if (data.type === "chunk") {
-          // Update AI message with new content chunk
-          setMessages(prev => 
-            prev.map(msg => {
-              if (msg.id === data.messageId) {
-                // Append new content to existing message
-                return {
-                  ...msg,
-                  content: msg.content + data.content
-                };
-              }
-              return msg;
-            })
-          );
-        }
-        else if (data.type === "done") {
-          // Stream is complete
-          setIsStreaming(false);
-          
-          // Make sure we have the full content
-          setMessages(prev => 
-            prev.map(msg => {
-              if (msg.id === data.messageId) {
-                return {
-                  ...msg,
-                  content: data.fullContent
-                };
-              }
-              return msg;
-            })
-          );
-          
-          // Close the event source
-          eventSource.close();
-        }
-        else if (data.type === "error") {
-          console.error("Error in SSE stream:", data.message);
-          setIsStreaming(false);
-          eventSource.close();
+      // Remove typing indicator and update user message with real ID
+      setMessages(prev => 
+        prev
+          .filter(msg => msg.id !== -999) // Remove typing indicator
+          .map(msg => msg.id === tempUserMessage.id ? { ...msg, id: responseData.userMessageId } : msg)
+      );
+      
+      // Add AI message (empty at first)
+      const aiMessage = {
+        id: responseData.aiMessageId,
+        sessionId,
+        isAi: true,
+        content: "...",
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: "ai",
+          name: "Dr. AI Therapist"
         }
       };
       
-      eventSource.onerror = (err) => {
-        console.error("SSE error:", err);
-        setIsStreaming(false);
-        eventSource.close();
-        
-        // Fetch messages to ensure we have the latest state
-        queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}/messages`] });
-      };
+      setMessages(prev => [...prev, aiMessage]);
+      
+      // Start polling for updates to this message
+      startMessagePolling(responseData.aiMessageId);
       
       return true;
     } catch (error) {
