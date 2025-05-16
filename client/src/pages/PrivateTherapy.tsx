@@ -74,52 +74,23 @@ export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
   
   if (!activeSession) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center">
-            <Lock className="w-16 h-16 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Start Private Session</h2>
+      <div className="flex items-center justify-center h-full px-4">
+        <Card className="w-full max-w-md shadow-lg border-muted/40">
+          <CardContent className="pt-6 pb-6 text-center">
+            <Lock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-medium mb-2">Start Private Session</h2>
             <p className="text-muted-foreground mb-6">
               Have a private conversation in a secure, confidential space.
             </p>
             
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Private Session
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create Private Session</DialogTitle>
-                  <DialogDescription>
-                    Your private sessions are confidential and not shared with your partner.
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="session-title">Session Title</Label>
-                    <Input
-                      id="session-title"
-                      placeholder="e.g., Personal Reflections"
-                      value={sessionTitle}
-                      onChange={(e) => setSessionTitle(e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <DialogFooter>
-                  <Button
-                    onClick={handleCreateSession}
-                    disabled={createSession.isPending}
-                  >
-                    {createSession.isPending ? "Creating..." : "Create Session"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button
+              onClick={() => createSession.mutate()}
+              className="w-full"
+              disabled={createSession.isPending}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {createSession.isPending ? "Creating..." : "New Session"}
+            </Button>
           </CardContent>
         </Card>
       </div>
