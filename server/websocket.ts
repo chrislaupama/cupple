@@ -95,34 +95,46 @@ export function setupWebSocketServer(server: Server) {
             messageRecipients.push(session.partnerId);
           }
           
-          // Get the first recipient's client for streaming
-          const streamClient = clients.get(messageRecipients[0]);
-          
-          // Generate AI response with streaming
-          await getSimpleTherapyResponse(
-            message.content,
-            session.type,
-            (chunk) => {
-              if (streamClient && streamClient.readyState === WebSocket.OPEN) {
-                streamClient.send(JSON.stringify({
-                  type: "stream",
+          // Get recipients for streaming
+          messageRecipients.forEach(recipientId => {
+            const client = clients.get(recipientId);
+            
+            // Generate AI response with streaming for each client
+            getSimpleTherapyResponse(
+              message.content,
+              session.type,
+              (chunk) => {
+                if (client && client.readyState === WebSocket.OPEN) {
+                  client.send(JSON.stringify({
+                    type: "stream",
+                    messageId: savedMessage.id,
+                    content: chunk
+                  }));
+                }
+              }
+            ).then((fullResponse) => {
+              // Send stream complete notification
+              if (client && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: "stream_complete",
                   messageId: savedMessage.id,
-                  content: chunk
+                  sessionId: session.id,
+                  fullContent: fullResponse
                 }));
               }
-            }
-          );
+            }).catch(error => {
+              console.error("Error in AI response:", error);
+              if (client && client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                  type: "error",
+                  messageId: savedMessage.id,
+                  error: "Failed to generate response"
+                }));
+              }
+            });
+          });
           
-          // Send stream complete notification
-          if (streamClient && streamClient.readyState === WebSocket.OPEN) {
-            streamClient.send(JSON.stringify({
-              type: "stream_complete",
-              messageId: savedMessage.id,
-              sessionId: session.id
-            }));
-          }
-          
-          console.log("AI response generated:", aiResponse);
+          console.log("AI response generation started");
           
           // Save the AI message in the database
           const savedMessage = await storage.createMessage({

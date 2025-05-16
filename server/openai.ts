@@ -65,7 +65,7 @@ export async function getSimpleTherapyResponse(
     }
 
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message },
@@ -77,12 +77,19 @@ export async function getSimpleTherapyResponse(
 
     let fullResponse = '';
 
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content || '';
-      if (content) {
-        fullResponse += content;
-        onChunk(content);
+    try {
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          fullResponse += content;
+          if (typeof onChunk === 'function') {
+            onChunk(content);
+          }
+        }
       }
+    } catch (error) {
+      console.error("Error processing stream:", error);
+      throw error;
     }
 
     return fullResponse;
