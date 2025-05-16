@@ -128,6 +128,40 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // For development convenience, always allow access
+  if (process.env.NODE_ENV === 'development') {
+    // If no user exists, create a mock user session
+    if (!req.user) {
+      const mockUserId = "36008288";
+      
+      // Mock user data
+      req.user = {
+        claims: {
+          sub: mockUserId,
+          email: "developer@example.com",
+          first_name: "Developer",
+          profile_image_url: null
+        }
+      };
+      
+      // Make sure user exists in database
+      try {
+        await storage.upsertUser({
+          id: mockUserId,
+          email: "developer@example.com",
+          firstName: "Developer",
+          lastName: null,
+          profileImageUrl: null,
+        });
+      } catch (error) {
+        console.error("Failed to create mock user:", error);
+      }
+    }
+    
+    return next();
+  }
+  
+  // In production, use the normal authentication logic
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

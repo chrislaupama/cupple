@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
-import { getTherapyResponse } from "./directOpenAI";
+import { getSimpleTherapyResponse } from "./simplifiedOpenAI";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -292,8 +292,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Processing message for ${type} therapy, sessionId: ${sessionId}, messageId: ${messageId}`);
       
-      // Generate therapy response using our direct OpenAI integration
-      const aiResponse = await getTherapyResponse(lastUserMessage, type);
+      // Generate therapy response using our simplified OpenAI integration
+      const aiResponse = await getSimpleTherapyResponse(lastUserMessage, type);
       
       // Update the message with the AI-generated response
       await storage.updateMessage(messageId, aiResponse);
