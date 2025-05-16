@@ -99,7 +99,7 @@ export function EmptyStateCard() {
             disabled={isLoading}
           >
             <Users className="h-6 w-6 text-muted-foreground group-hover:text-foreground" />
-            <span className="font-medium">Couples Session</span>
+            <span className="font-medium">Cupple Session</span>
           </Button>
         </CardContent>
         <CardFooter className="justify-center text-sm text-muted-foreground">

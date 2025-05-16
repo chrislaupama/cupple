@@ -40,7 +40,7 @@ import { Label } from "@/components/ui/label";
 type ChatContainerProps = {
   sessionId: number;
   userId: string;
-  chatType: "couples" | "private";
+  chatType: "couples" | "private"; // Using same database values, but displaying as "Cupple" and "Personal"
 };
 
 export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProps) {
@@ -90,8 +90,8 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
             <p className="text-lg font-medium mb-2">Start a conversation</p>
             <p className="text-muted-foreground max-w-md">
               {chatType === "private" 
-                ? "Begin your private therapy session. Your messages are confidential." 
-                : "Begin your couples therapy session. Share and grow together."}
+                ? "Begin your personal therapy session. Your messages are confidential." 
+                : "Begin your cupple therapy session. Share and grow together."}
             </p>
           </div>
         )}
@@ -165,13 +165,13 @@ function ChatHeader({ session, type }: { session: Session, type: "couples" | "pr
       <div className="flex items-center justify-between max-w-4xl mx-auto">
         <div className="flex items-center">
           <h2 className="text-base font-medium truncate max-w-[260px] md:max-w-xs">
-            {session.title || (type === "couples" ? "Couples Session" : "Private Session")}
+            {session.title || (type === "couples" ? "Cupple Session" : "Personal Session")}
           </h2>
           <Badge 
             variant="outline" 
             className="ml-2"
           >
-            {type === "couples" ? "Couples" : "Private"}
+            {type === "couples" ? "Cupple" : "Personal"}
           </Badge>
         </div>
         
