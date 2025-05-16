@@ -7,11 +7,15 @@ import { Sun, Moon, ChevronDown, Settings, HelpCircle, LogOut } from "lucide-rea
 import { Link } from "wouter";
 
 export function Header() {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const { user, isAuthenticated } = useAuth();
   
   const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
+    if (theme === "system") {
+      setTheme(resolvedTheme === "light" ? "dark" : "light");
+    } else {
+      setTheme(theme === "light" ? "dark" : "light");
+    }
   };
 
   const getInitials = () => {
@@ -38,7 +42,7 @@ export function Header() {
           size="icon"
           onClick={toggleTheme} 
         >
-          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          {resolvedTheme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </Button>
         
         {isAuthenticated ? (
