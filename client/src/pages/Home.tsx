@@ -85,7 +85,7 @@ export default function Home() {
     );
   }
 
-  // Default home view (empty state or tabs)
+  // Default home view (always use EmptyStateCard for consistent experience)
   return (
     <div className="flex flex-col h-screen">
       <Header />
@@ -94,25 +94,7 @@ export default function Home() {
         <Sidebar />
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          {Array.isArray(sessions) && sessions.length === 0 ? (
-            <EmptyStateCard />
-          ) : (
-            <Tabs 
-              defaultValue={location === "/private" ? "private" : "couples"} 
-              className="flex-1 flex flex-col"
-            >
-              <TabsList className="md:hidden mx-4 mt-2 justify-center">
-                <TabsTrigger value="couples" className="flex-1">Couples</TabsTrigger>
-                <TabsTrigger value="private" className="flex-1">Private</TabsTrigger>
-              </TabsList>
-              <TabsContent value="couples" className="flex-1 p-0 m-0">
-                <CouplesTherapy userId={(user as any)?.id || ""} />
-              </TabsContent>
-              <TabsContent value="private" className="flex-1 p-0 m-0">
-                <PrivateTherapy userId={(user as any)?.id || ""} />
-              </TabsContent>
-            </Tabs>
-          )}
+          <EmptyStateCard />
         </div>
       </div>
       
