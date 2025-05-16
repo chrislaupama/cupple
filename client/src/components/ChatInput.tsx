@@ -35,7 +35,7 @@ export function ChatInput({ onSendMessage, isPrivate }: ChatInputProps) {
   }, [message]);
 
   return (
-    <div className="relative border-t p-4 md:p-6 bg-background">
+    <div className="relative p-4 md:p-6 bg-background">
       <form onSubmit={handleSendMessage} className="mx-auto max-w-4xl">
         <div className="relative flex items-center rounded-xl border shadow-sm bg-background">
           <Textarea
