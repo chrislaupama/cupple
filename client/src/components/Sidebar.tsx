@@ -109,18 +109,18 @@ export function Sidebar() {
               .filter((session: SessionType) => session.type === "private")
               .slice(0, 5)
               .map((session: SessionType) => (
-                <Link href={`/session/${session.id}`} key={session.id}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    <div className="flex flex-col items-start">
-                      <span className="block">{session.title}</span>
-                      <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
-                    </div>
-                  </Button>
-                </Link>
+                <Button
+                  key={session.id}
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => navigate(`/session/${session.id}`)}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  <div className="flex flex-col items-start">
+                    <span className="block">{session.title}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
+                  </div>
+                </Button>
               ))}
           
           {(!sessions || !Array.isArray(sessions) || 
@@ -151,18 +151,18 @@ export function Sidebar() {
               .filter((session: SessionType) => session.type === "couples")
               .slice(0, 5)
               .map((session: SessionType) => (
-                <Link href={`/session/${session.id}`} key={session.id}>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start"
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    <div className="flex flex-col items-start">
-                      <span className="block">{session.title}</span>
-                      <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
-                    </div>
-                  </Button>
-                </Link>
+                <Button
+                  key={session.id}
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => navigate(`/session/${session.id}`)}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  <div className="flex flex-col items-start">
+                    <span className="block">{session.title}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
+                  </div>
+                </Button>
               ))}
           
           {(!sessions || !Array.isArray(sessions) || 
