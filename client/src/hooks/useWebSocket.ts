@@ -33,40 +33,59 @@ export function useWebSocket({
   useEffect(() => {
     if (!userId) return;
 
-    // Create WebSocket connection
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws?userId=${userId}`;
-    
-    const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
+    let reconnectTimer: NodeJS.Timeout;
+    const connectWebSocket = () => {
+      // Create WebSocket connection
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${window.location.host}/ws?userId=${userId}`;
+      
+      console.log("Connecting to WebSocket:", wsUrl);
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
 
-    socket.onopen = () => {
-      setIsConnected(true);
-      if (onConnected) onConnected();
-    };
+      socket.onopen = () => {
+        console.log("WebSocket connection established");
+        setIsConnected(true);
+        if (onConnected) onConnected();
+      };
 
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (onMessage) onMessage(data);
-      } catch (error) {
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("WebSocket message received:", data);
+          if (onMessage) onMessage(data);
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+          if (onError) onError(error);
+        }
+      };
+
+      socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
         if (onError) onError(error);
-      }
+      };
+
+      socket.onclose = (event) => {
+        console.log("WebSocket connection closed:", event.code, event.reason);
+        setIsConnected(false);
+        if (onDisconnected) onDisconnected();
+        
+        // Attempt to reconnect after a delay, unless the component is unmounting
+        // or the connection was closed normally
+        if (event.code !== 1000) {
+          reconnectTimer = setTimeout(connectWebSocket, 3000);
+        }
+      };
     };
 
-    socket.onerror = (error) => {
-      if (onError) onError(error);
-    };
-
-    socket.onclose = () => {
-      setIsConnected(false);
-      if (onDisconnected) onDisconnected();
-    };
+    // Initialize connection
+    connectWebSocket();
 
     // Clean up on unmount
     return () => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.close();
+      clearTimeout(reconnectTimer);
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.close(1000, "Component unmounting");
       }
     };
   }, [userId, onMessage, onConnected, onDisconnected, onError]);

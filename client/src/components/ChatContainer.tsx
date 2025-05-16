@@ -44,7 +44,18 @@ type ChatContainerProps = {
 };
 
 export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProps) {
-  const { messages, session, isLoading, sendMessage } = useChat(sessionId, userId);
+  const { messages, session, isLoading, sendMessage, isStreaming } = useChat(sessionId, userId);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-scroll function
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  
+  // Scroll to bottom when messages change or when streaming
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isStreaming]);
   
   if (isLoading) {
     return <ChatSkeleton />;
@@ -64,6 +75,8 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
   const handleSendMessage = (content: string) => {
     if (content.trim()) {
       sendMessage(content);
+      // Scroll to bottom after sending a message
+      setTimeout(scrollToBottom, 100);
     }
   };
 
@@ -82,6 +95,8 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
             </p>
           </div>
         )}
+        {/* Invisible element for scrolling to the bottom */}
+        <div ref={messagesEndRef} />
       </div>
       <ChatInput onSendMessage={handleSendMessage} isPrivate={chatType === "private"} />
     </div>

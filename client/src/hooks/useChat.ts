@@ -232,6 +232,7 @@ export function useChat(sessionId: number, userId: string) {
     session,
     isLoading,
     isConnected,
+    isStreaming,
     sendMessage: sendChatMessage,
   };
 }
