@@ -13,7 +13,7 @@ import {
   type InsertPartner
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, asc } from "drizzle-orm";
+import { eq, desc, and, asc, or } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {

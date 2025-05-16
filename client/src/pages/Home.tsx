@@ -10,7 +10,7 @@ import PrivateTherapy from "@/pages/PrivateTherapy";
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const [_, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -38,7 +38,10 @@ export default function Home() {
         <Sidebar />
         
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Tabs defaultValue="couples" className="flex-1 flex flex-col">
+          <Tabs 
+            defaultValue={location === "/private" ? "private" : "couples"} 
+            className="flex-1 flex flex-col"
+          >
             <TabsList className="md:hidden mx-4 mt-2 justify-center">
               <TabsTrigger value="couples" className="flex-1">Couples</TabsTrigger>
               <TabsTrigger value="private" className="flex-1">Private</TabsTrigger>
