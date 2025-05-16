@@ -1,9 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { Plus, HelpCircle, Settings, Users, User } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type SessionType = {
   id: number;
@@ -13,11 +15,65 @@ type SessionType = {
 };
 
 export function Sidebar() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch recent sessions
   const { data: sessions } = useQuery({
     queryKey: ["/api/sessions"],
+  });
+  
+  // Create new private session
+  const createPrivateSession = useMutation({
+    mutationFn: async () => {
+      const privateCount = Array.isArray(sessions) 
+        ? sessions.filter(s => s.type === "private").length + 1
+        : 1;
+      
+      const response = await apiRequest("POST", "/api/sessions", {
+        title: `Private Session ${privateCount}`,
+        type: "private",
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      window.location.href = `/session/${data.id}`;
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create new session. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Create new couples session
+  const createCouplesSession = useMutation({
+    mutationFn: async () => {
+      const couplesCount = Array.isArray(sessions) 
+        ? sessions.filter(s => s.type === "couples").length + 1
+        : 1;
+      
+      const response = await apiRequest("POST", "/api/sessions", {
+        title: `Couples Session ${couplesCount}`,
+        type: "couples",
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+      window.location.href = `/session/${data.id}`;
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create new session. Please try again.",
+        variant: "destructive",
+      });
+    }
   });
 
   const formatDate = (dateString: string) => {
@@ -36,11 +92,15 @@ export function Sidebar() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Private Sessions</h2>
-          <Link href="/private">
-            <Button size="icon" variant="ghost" className="h-5 w-5 rounded-full">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </Link>
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-5 w-5 rounded-full"
+            onClick={() => createPrivateSession.mutate()}
+            disabled={createPrivateSession.isPending}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
         </div>
         
         <div className="space-y-1">
@@ -74,11 +134,15 @@ export function Sidebar() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground">Couples Sessions</h2>
-          <Link href="/couples">
-            <Button size="icon" variant="ghost" className="h-5 w-5 rounded-full">
-              <Plus className="h-3 w-3" />
-            </Button>
-          </Link>
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-5 w-5 rounded-full"
+            onClick={() => createCouplesSession.mutate()}
+            disabled={createCouplesSession.isPending}
+          >
+            <Plus className="h-3 w-3" />
+          </Button>
         </div>
         
         <div className="space-y-1">
