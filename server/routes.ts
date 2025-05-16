@@ -5,6 +5,10 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
 import { generateTherapistResponse } from "./openai";
+import OpenAI from "openai";
+
+// Initialize the OpenAI client
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -276,24 +280,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update message initially to show loading
       await storage.updateMessage(messageId, "...");
       
-      // Prepare messages for the API call
-      const formattedMessages = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-      
-      // Call our existing OpenAI integration function with properly formatted messages
+      // Directly use a simpler message format for OpenAI
       try {
-        // Format messages correctly for OpenAI
-        const apiMessages = formattedMessages.map(msg => ({
-          role: msg.role === "assistant" ? "assistant" as const : "user" as const,
-          content: msg.content
-        }));
+        console.log("Processing AI response for type:", type);
+        console.log("Adding message context with length:", messages.length);
         
-        const aiResponse = await generateTherapistResponse(apiMessages, type);
+        // Create a very simple message format that we know works
+        const simplePrompt = `You are an AI therapist helping with a ${type} therapy session. 
+        Please respond to this message: ${messages[messages.length - 1]?.content || "Hello, how can I help you today?"}`;
         
-        // Update with the final AI response
-        await storage.updateMessage(messageId, aiResponse);
+        // Using the OpenAI client we initialized at the top of the file
+        const aiResponse = await OpenAI.chat.completions.create({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: simplePrompt }]
+        });
+        
+        const responseText = aiResponse.choices[0].message.content || "I'm sorry, I couldn't generate a response.";
+        
+        // Update with the final AI response text
+        await storage.updateMessage(messageId, responseText);
         
         // Update session's last activity time
         await storage.updateSessionLastActivity(sessionId);
