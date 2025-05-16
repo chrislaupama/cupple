@@ -170,7 +170,7 @@ export function useChat(sessionId: number, userId: string) {
         const data = await response.json();
         
         // If we have an actual message (not just "Thinking...")
-        if (data.content !== previousContent && data.content !== "Thinking...") {
+        if (data.content !== previousContent) {
           previousContent = data.content;
           
           // Update message in the UI
@@ -182,8 +182,8 @@ export function useChat(sessionId: number, userId: string) {
             )
           );
           
-          // Message is complete when it has content and isn't just "Thinking..."
-          if (data.content && data.content !== "Thinking..." && data.isComplete) {
+          // Message is complete when indicated by the server
+          if (data.isComplete) {
             console.log("Message complete, stopping polling");
             clearInterval(intervalId);
             setIsStreaming(false);
