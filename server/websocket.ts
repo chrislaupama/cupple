@@ -23,18 +23,23 @@ export function setupWebSocketServer(server: Server) {
   wss.on("connection", (ws, req) => {
     const userId = req.url?.split("?userId=")[1];
     
+    console.log(`WebSocket connection attempt with userId: ${userId}`);
+    
     if (!userId) {
+      console.log("WebSocket connection closed: No user ID provided");
       ws.close(1008, "User ID required");
       return;
     }
     
     // Store the client connection
     clients.set(userId, ws);
+    console.log(`WebSocket client connected for user: ${userId}`);
     
     ws.on("message", async (data) => {
       try {
         // Parse the incoming message
         const message = JSON.parse(data.toString()) as MessageData;
+        console.log("WebSocket received message:", message);
         
         // Store the message in the database
         const savedMessage = await storage.createMessage({
@@ -43,6 +48,8 @@ export function setupWebSocketServer(server: Server) {
           isAi: false,
           content: message.content
         });
+        
+        console.log("Saved user message to database:", savedMessage);
         
         // Get the session to determine the type and participants
         const session = await storage.getTherapySession(message.sessionId);
@@ -80,7 +87,10 @@ export function setupWebSocketServer(server: Server) {
             content: msg.content
           }));
           
+          console.log("Generating AI response with message history:", formattedMessages);
+          
           const aiResponse = await generateTherapistResponse(formattedMessages, "couples");
+          console.log("AI response generated:", aiResponse);
           
           // Save AI response to database
           const savedAiMessage = await storage.createMessage({

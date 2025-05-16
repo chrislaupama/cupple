@@ -44,12 +44,14 @@ export function useChat(sessionId: number, userId: string) {
   const { data: messageHistory, isLoading: isLoadingMessages } = useQuery({
     queryKey: [`/api/sessions/${sessionId}/messages`],
     enabled: !!sessionId,
-    onSuccess: (data) => {
-      if (data) {
-        setMessages(data);
-      }
-    },
   });
+  
+  // Update messages when message history changes
+  useEffect(() => {
+    if (messageHistory && Array.isArray(messageHistory)) {
+      setMessages(messageHistory as Message[]);
+    }
+  }, [messageHistory]);
 
   // Setup WebSocket connection
   const { isConnected, sendMessage } = useWebSocket({
@@ -72,7 +74,15 @@ export function useChat(sessionId: number, userId: string) {
 
   // Set up mutation for sending messages
   const sendChatMessage = async (content: string) => {
-    if (!session || !isConnected) return;
+    if (!session) {
+      console.log("No active session found");
+      return;
+    }
+    
+    if (!isConnected) {
+      console.log("WebSocket is not connected");
+      return;
+    }
 
     const messageData = {
       type: "message",
@@ -84,6 +94,7 @@ export function useChat(sessionId: number, userId: string) {
       }
     };
 
+    console.log("Sending message:", messageData);
     return sendMessage(messageData);
   };
 
