@@ -111,27 +111,26 @@ export function setupWebSocketServer(server: Server) {
           
           // No need to save message here as it's done in the streaming function
           
-          // Send AI response to all recipients
-          console.log("Sending AI response to recipients:", recipients);
-          recipients.forEach(recipientId => {
-            const client = clients.get(recipientId);
-            if (client && client.readyState === WebSocket.OPEN) {
-              const aiMessageData = {
-                type: "message",
-                message: {
-                  ...savedAiMessage,
-                  sender: {
-                    id: "ai",
-                    name: "Dr. AI Therapist"
-                  }
-                }
-              };
-              console.log("Sending AI message to recipient:", recipientId, aiMessageData);
-              client.send(JSON.stringify(aiMessageData));
-            } else {
-              console.log(`Cannot send to recipient ${recipientId}: ${client ? 'WebSocket not open' : 'Client not connected'}`);
+          // Note: The streaming response is already being sent to the first recipient
+          // If there are multiple recipients (couples therapy), send completion messages to all other recipients
+          if (messageRecipients.length > 1) {
+            console.log("Notifying other recipients about completed AI response");
+            for (let i = 1; i < messageRecipients.length; i++) {
+              const recipientId = messageRecipients[i];
+              const client = clients.get(recipientId);
+              if (client && client.readyState === WebSocket.OPEN) {
+                const completionMessage = {
+                  type: "stream_complete",
+                  sessionId: message.sessionId,
+                  content: aiResponse
+                };
+                console.log("Sending completion notification to recipient:", recipientId);
+                client.send(JSON.stringify(completionMessage));
+              } else {
+                console.log(`Cannot send to recipient ${recipientId}: ${client ? 'WebSocket not open' : 'Client not connected'}`);
+              }
             }
-          });
+          }
           
         } else if (session.type === "private") {
           // Private therapy - only send to the creator
@@ -169,23 +168,8 @@ export function setupWebSocketServer(server: Server) {
           
           console.log("Private therapy AI response generated:", aiResponse);
           
-          // Send AI response to the creator only
-          if (client && client.readyState === WebSocket.OPEN) {
-            const aiMessageData = {
-              type: "message",
-              message: {
-                ...savedAiMessage,
-                sender: {
-                  id: "ai",
-                  name: "Dr. AI Therapist"
-                }
-              }
-            };
-            console.log("Sending private therapy AI message to creator:", session.creatorId, aiMessageData);
-            client.send(JSON.stringify(aiMessageData));
-          } else {
-            console.log(`Cannot send to creator ${session.creatorId}: ${client ? 'WebSocket not open' : 'Client not connected'}`);
-          }
+          // The streaming response is already sent directly to the client
+          // No need to send an additional message here
         }
         
         // Update session's lastMessageAt

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useWebSocket } from "./useWebSocket";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useWebSocket, type MessageData } from "./useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
 
 export type Message = {
@@ -53,10 +53,14 @@ export function useChat(sessionId: number, userId: string) {
     }
   }, [messageHistory]);
 
+  // Track messages being streamed
+  const [streamingMessages, setStreamingMessages] = useState<Record<number, string>>({});
+  
   // Setup WebSocket connection
   const { isConnected, sendMessage } = useWebSocket({
     userId,
     onMessage: (data) => {
+      // Handle regular messages
       if (data.type === "message" && data.message) {
         setMessages((prevMessages) => {
           // Avoid duplicate messages
@@ -65,6 +69,48 @@ export function useChat(sessionId: number, userId: string) {
           }
           return [...prevMessages, data.message];
         });
+      }
+      
+      // Handle streaming message chunks
+      else if (data.type === "stream" && data.messageId) {
+        // Update the streaming content
+        setStreamingMessages(prev => ({
+          ...prev,
+          [data.messageId]: data.fullContent
+        }));
+        
+        // Check if this message exists in our messages array
+        setMessages(prevMessages => {
+          const exists = prevMessages.some(msg => msg.id === data.messageId);
+          
+          if (exists) {
+            // Update existing message
+            return prevMessages.map(msg => 
+              msg.id === data.messageId 
+                ? { ...msg, content: data.fullContent }
+                : msg
+            );
+          } else {
+            // Add new streaming message
+            return [...prevMessages, {
+              id: data.messageId,
+              sessionId: sessionId,
+              isAi: true,
+              content: data.fullContent,
+              createdAt: new Date().toISOString(),
+              sender: {
+                id: "ai",
+                name: "Dr. AI Therapist"
+              }
+            }];
+          }
+        });
+      }
+      
+      // Handle stream complete notification (for secondary clients in couples therapy)
+      else if (data.type === "stream_complete" && data.sessionId === sessionId) {
+        // Fetch updated messages to get the complete message
+        queryClient.invalidateQueries({ queryKey: [`/api/sessions/${sessionId}/messages`] });
       }
     },
     onConnected: () => {

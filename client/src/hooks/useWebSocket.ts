@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
-type MessageData = {
+export type MessageData = {
   type: string;
   message?: any;
   error?: string;
+  // Streaming message fields
+  messageId?: number;
+  content?: string;
+  fullContent?: string;
+  // Stream complete notification
+  sessionId?: number;
 };
 
 type UseWebSocketOptions = {
