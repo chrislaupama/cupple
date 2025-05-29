@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export function EmptyStateCard() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   
   const createSession = useMutation({
@@ -47,11 +48,11 @@ export function EmptyStateCard() {
       // Invalidate the sessions query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       
-      // Use window.location for more reliable navigation
+      // Use client-side navigation for smooth experience
       if (data && data.id) {
         const sessionUrl = `/session/${data.id}`;
         console.log(`Navigation to new session: ${sessionUrl}`);
-        window.location.href = sessionUrl;
+        navigate(sessionUrl);
       } else {
         console.error("Missing session ID in response:", data);
       }

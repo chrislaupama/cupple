@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 type PersonalTherapyProps = {
   userId: string;
@@ -13,6 +14,7 @@ type PersonalTherapyProps = {
 export default function PrivateTherapy({ userId }: PersonalTherapyProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   
   // Fetch existing personal therapy sessions
   const { data: sessions, isLoading } = useQuery({
@@ -33,7 +35,7 @@ export default function PrivateTherapy({ userId }: PersonalTherapyProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       
       // Navigate to the new session
-      window.location.href = `/session/${data.id}`;
+      navigate(`/session/${data.id}`);
       
       toast({
         title: "Success",

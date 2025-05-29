@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 type CuppleTherapyProps = {
   userId: string;
@@ -13,6 +14,7 @@ type CuppleTherapyProps = {
 export default function CouplesTherapy({ userId }: CuppleTherapyProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   
   // Fetch existing Cupple therapy sessions
   const { data: sessions, isLoading } = useQuery({
@@ -33,7 +35,7 @@ export default function CouplesTherapy({ userId }: CuppleTherapyProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
       
       // Navigate to the new session
-      window.location.href = `/session/${data.id}`;
+      navigate(`/session/${data.id}`);
       
       toast({
         title: "Success",

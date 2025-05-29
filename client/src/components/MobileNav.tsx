@@ -3,19 +3,19 @@ import { Users, User, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function MobileNav() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
-  // Simple navigation functions
+  // Client-side navigation functions
   const goToHome = () => {
-    window.location.href = "/";
+    navigate("/");
   };
   
   const goToCouples = () => {
-    window.location.href = "/couples";
+    navigate("/couples");
   };
   
   const goToPersonal = () => {
-    window.location.href = "/private";
+    navigate("/private");
   };
 
   return (
