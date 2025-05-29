@@ -119,11 +119,23 @@ export default function Home() {
     );
   }
   
-  // Loading state for session
+  // Loading state for session - keep layout but show loading in chat area
   if (sessionId && isSessionLoading) {
     return (
-      <div className="flex h-screen justify-center items-center">
-        <div className="w-8 h-8 border-4 border-foreground/30 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex flex-col h-screen">
+        <Header />
+        
+        <div className="flex-1 flex overflow-hidden">
+          <Sidebar />
+          
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex justify-center items-center">
+              <div className="w-8 h-8 border-4 border-foreground/30 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </div>
+        
+        <MobileNav />
       </div>
     );
   }
