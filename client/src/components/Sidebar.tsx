@@ -114,6 +114,11 @@ export function Sidebar() {
                   variant="ghost"
                   className="w-full justify-start"
                   onClick={() => navigate(`/session/${session.id}`)}
+                  onMouseEnter={() => {
+                    // Prefetch session data on hover for faster navigation
+                    queryClient.prefetchQuery({ queryKey: [`/api/sessions/${session.id}`] });
+                    queryClient.prefetchQuery({ queryKey: [`/api/sessions/${session.id}/messages`] });
+                  }}
                 >
                   <User className="mr-2 h-4 w-4" />
                   <div className="flex flex-col items-start">
@@ -156,6 +161,11 @@ export function Sidebar() {
                   variant="ghost"
                   className="w-full justify-start"
                   onClick={() => navigate(`/session/${session.id}`)}
+                  onMouseEnter={() => {
+                    // Prefetch session data on hover for faster navigation
+                    queryClient.prefetchQuery({ queryKey: [`/api/sessions/${session.id}`] });
+                    queryClient.prefetchQuery({ queryKey: [`/api/sessions/${session.id}/messages`] });
+                  }}
                 >
                   <Users className="mr-2 h-4 w-4" />
                   <div className="flex flex-col items-start">
