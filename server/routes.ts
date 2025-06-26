@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
-import { getSimpleTherapyResponse } from "./openai";
+import { getSimpleTherapyResponse, generateSessionTitle } from "./openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -302,6 +302,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Track streaming completion state for messages
   const streamingCompletionMap = new Map<number, boolean>();
 
+  // Helper function to check if session needs title generation and generate it
+  async function checkAndGenerateSessionTitle(sessionId: number, userMessage: string, aiResponse: string, sessionType: string) {
+    try {
+      // Get the session to check current title
+      const session = await storage.getTherapySession(sessionId);
+      if (!session) return;
+
+      // Check if the session has a default title that needs to be replaced
+      const hasDefaultTitle = session.title.includes('Personal Session') || 
+                              session.title.includes('Cupple Session') ||
+                              session.title.includes('Private Session') ||
+                              session.title.includes('Couples Session');
+
+      if (!hasDefaultTitle) {
+        // Session already has a custom title, don't override it
+        return;
+      }
+
+      // Get all messages to see if this is one of the first exchanges
+      const allMessages = await storage.getSessionMessages(sessionId);
+      
+      // Only generate title if this is within the first few exchanges (user + AI response pairs)
+      // We count AI messages to determine if this is early in the conversation
+      const aiMessageCount = allMessages.filter(msg => msg.isAi && msg.content.trim().length > 0).length;
+      
+      if (aiMessageCount <= 2) { // Only for the first or second AI response
+        console.log(`Generating title for session ${sessionId} based on early conversation`);
+        
+        // Generate the title
+        const newTitle = await generateSessionTitle(userMessage, aiResponse, sessionType);
+        
+        if (newTitle && newTitle !== session.title) {
+          await storage.updateSessionTitle(sessionId, newTitle);
+          console.log(`Updated session ${sessionId} title to: "${newTitle}"`);
+        }
+      }
+    } catch (error) {
+      console.error("Error in auto-generating session title:", error);
+      // Don't throw error - title generation is non-critical
+    }
+  }
+
   // Function to generate AI responses using OpenAI with streaming
   async function handleAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
@@ -338,6 +380,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Mark streaming as complete and do final update
         streamingCompletionMap.set(messageId, true);
         await storage.updateMessage(messageId, aiResponse);
+
+        // Check if this is the first conversation and auto-generate title
+        await checkAndGenerateSessionTitle(sessionId, lastUserMessage, aiResponse, type);
       } catch (openaiError) {
         console.error("OpenAI error:", openaiError);
         streamingCompletionMap.set(messageId, true);

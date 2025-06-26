@@ -7,6 +7,69 @@ const openai = new OpenAI({
 /**
  * Get therapy response with streaming support
  */
+/**
+ * Generate a concise session title based on the user's initial message and AI response
+ */
+export async function generateSessionTitle(
+  userMessage: string,
+  aiResponse: string,
+  therapyType: string
+): Promise<string> {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      // Return a simple fallback based on message content
+      const topic = userMessage.toLowerCase();
+      if (topic.includes('relationship') || topic.includes('partner')) {
+        return therapyType === 'couples' ? 'Relationship Discussion' : 'Personal Relationship';
+      }
+      if (topic.includes('anxiety') || topic.includes('stress')) {
+        return 'Anxiety Support';
+      }
+      if (topic.includes('depression') || topic.includes('sad')) {
+        return 'Emotional Support';
+      }
+      return therapyType === 'couples' ? 'Cupple Session' : 'Personal Session';
+    }
+
+    const systemPrompt = `You are a session title generator for therapy conversations. Your task is to create a short, descriptive title (3-6 words) that captures the main topic or concern discussed.
+
+GUIDELINES:
+- Keep titles between 3-6 words maximum
+- Focus on the main concern or topic
+- Use professional, neutral language
+- Avoid overly clinical or diagnostic terms
+- Make it meaningful but not too specific
+- Examples: "Communication Issues", "Work Stress Management", "Trust and Intimacy", "Self-Esteem Building"
+
+Based on the user's message and the therapist's response, generate an appropriate session title.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `User message: "${userMessage.substring(0, 200)}"\n\nTherapist response: "${aiResponse.substring(0, 200)}"` },
+      ],
+      temperature: 0.3,
+      max_tokens: 20,
+    });
+
+    const title = response.choices[0]?.message?.content?.trim();
+    
+    // Validate the title length and content
+    if (title && title.length <= 50 && title.split(' ').length <= 6) {
+      return title;
+    }
+    
+    // Fallback if generation fails
+    return therapyType === 'couples' ? 'Cupple Session' : 'Personal Session';
+    
+  } catch (error) {
+    console.error("Error generating session title:", error);
+    // Return default title on error
+    return therapyType === 'couples' ? 'Cupple Session' : 'Personal Session';
+  }
+}
+
 export async function getSimpleTherapyResponse(
   message: string,
   therapyType: string,
