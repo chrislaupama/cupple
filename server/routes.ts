@@ -260,14 +260,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Return the current message content and done status
-      // Consider the message complete if:
-      // 1. It has content (not empty)
-      // 2. It's not just "Thinking..." or "..."
-      // 3. It doesn't end with ellipsis
+      // Check if streaming is complete using our completion map
       const isThinking = message.content === "Thinking..." || message.content === "...";
-      const isComplete = message.content.length > 0 && 
-                         !isThinking && 
-                         !message.content.endsWith("...");
+      const isStreamingComplete = streamingCompletionMap.get(messageId) === true;
+      const isComplete = !isThinking && isStreamingComplete;
       
       res.json({
         content: message.content,
@@ -303,9 +299,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Function to generate AI responses using OpenAI
+  // Track streaming completion state for messages
+  const streamingCompletionMap = new Map<number, boolean>();
+
+  // Function to generate AI responses using OpenAI with streaming
   async function handleAIResponse(sessionId: number, messageId: number, messages: any[], type: string) {
     try {
+      // Mark streaming as not complete for this message
+      streamingCompletionMap.set(messageId, false);
+      
       // Show initial loading state
       await storage.updateMessage(messageId, "Thinking...");
       
@@ -320,13 +322,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Generating therapy response for message: ${lastUserMessage.substring(0, 30)}...`);
       
       try {
-        // Generate therapy response using our simplified OpenAI integration
-        const aiResponse = await getSimpleTherapyResponse(lastUserMessage, type);
+        let accumulatedResponse = "";
         
-        // Update the message with the AI-generated response
+        // Generate therapy response with streaming callback
+        const aiResponse = await getSimpleTherapyResponse(lastUserMessage, type, (chunk: string) => {
+          // Accumulate the response as chunks arrive
+          accumulatedResponse += chunk;
+          
+          // Update the message in real-time with the accumulated content
+          storage.updateMessage(messageId, accumulatedResponse).catch(err => {
+            console.error("Error updating streaming message:", err);
+          });
+        });
+        
+        // Mark streaming as complete and do final update
+        streamingCompletionMap.set(messageId, true);
         await storage.updateMessage(messageId, aiResponse);
       } catch (openaiError) {
         console.error("OpenAI error:", openaiError);
+        streamingCompletionMap.set(messageId, true);
         await storage.updateMessage(messageId, "I apologize for the technical difficulties. Let's try again in a moment.");
       }
       
@@ -336,6 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("AI response complete for message: " + messageId);
     } catch (error) {
       console.error("Error in AI response handling:", error);
+      streamingCompletionMap.set(messageId, true);
       await storage.updateMessage(messageId, "I'm sorry, I'm having trouble responding right now. Let's try again in a moment.");
     }
   }

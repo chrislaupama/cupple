@@ -35,12 +35,19 @@ export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessagePro
   }
   
   // Format message content with paragraphs, handling streaming content
+  const isThinking = message.content === "Thinking..." || message.content === "...";
+  const isStreaming = message.content.length > 0 && !isThinking && message.content.length < 50; // Assume streaming if short but not thinking
+  
   const formattedContent = message.content.split('\n').map((paragraph, index) => (
     paragraph ? (
       <p key={index} className={cn("mb-2 last:mb-0", {
-        "animate-pulse": message.content.endsWith('...') && index === message.content.split('\n').length - 1
+        "animate-pulse": isThinking
       })}>
         {paragraph}
+        {/* Add a blinking cursor effect for AI messages during streaming */}
+        {isAi && isStreaming && index === message.content.split('\n').length - 1 && (
+          <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse">|</span>
+        )}
       </p>
     ) : <br key={index} />
   ));

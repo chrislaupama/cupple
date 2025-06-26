@@ -84,7 +84,7 @@ export function ChatContainer({ sessionId, userId, chatType }: ChatContainerProp
     <div className="flex-1 flex flex-col bg-background overflow-hidden">
       <ChatHeader session={typedSession} type={chatType} />
       <div className="flex-1 overflow-y-auto">
-        <ChatMessageList messages={messages} userId={userId} />
+        <ChatMessageList messages={messages} userId={userId} isStreaming={isStreaming} />
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full py-8 px-4 text-center">
             <p className="text-lg font-medium mb-2">Start a conversation</p>
@@ -255,7 +255,7 @@ function ChatHeader({ session, type }: { session: Session, type: "couples" | "pr
   );
 }
 
-function ChatMessageList({ messages, userId }: { messages: Message[], userId: string }) {
+function ChatMessageList({ messages, userId, isStreaming }: { messages: Message[], userId: string, isStreaming: boolean }) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Scroll to bottom when messages change
@@ -270,13 +270,14 @@ function ChatMessageList({ messages, userId }: { messages: Message[], userId: st
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      {messages.map((message) => (
+      {messages.map((message, index) => (
         <ChatMessage
           key={message.id}
           message={message}
           isUser={message.senderId === userId}
           isPartner={message.senderId !== userId && !message.isAi}
           isAi={message.isAi}
+          isStreaming={isStreaming && index === messages.length - 1 && message.isAi}
         />
       ))}
       {/* Empty div for scrolling to bottom */}

@@ -10,7 +10,7 @@ const openai = new OpenAI({
 export async function getSimpleTherapyResponse(
   message: string,
   therapyType: string,
-  onChunk: (chunk: string) => void,
+  onChunk?: (chunk: string) => void,
 ): Promise<string> {
   try {
     const systemPrompt = therapyType === "couples"
@@ -96,7 +96,7 @@ export async function getSimpleTherapyResponse(
   } catch (error) {
     console.error("Error getting therapy response:", error);
 
-    if (error.message?.includes("API key")) {
+    if (error instanceof Error && error.message?.includes("API key")) {
       return "I'm having difficulty accessing my knowledge resources. This might be due to an authentication issue.";
     }
 
