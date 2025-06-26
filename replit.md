@@ -51,8 +51,9 @@ The application uses a PostgreSQL database with the following key tables:
 ### AI Integration
 - **Provider**: OpenAI API
 - **Models**: GPT for therapy responses
-- **Streaming**: Real-time response streaming via WebSocket
+- **Streaming**: Real-time text streaming with character-by-character display
 - **Context**: Different system prompts for couples vs personal therapy
+- **Visual Effects**: Typing indicators and blinking cursor during streaming
 
 ## Data Flow
 
@@ -107,6 +108,7 @@ The application uses a PostgreSQL database with the following key tables:
 ```
 Changelog:
 - June 26, 2025. Initial setup
+- June 26, 2025. Implemented real-time text streaming for AI responses with visual indicators
 ```
 
 ## User Preferences
