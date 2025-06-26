@@ -8,9 +8,10 @@ type ChatMessageProps = {
   isUser: boolean;
   isPartner: boolean;
   isAi: boolean;
+  isStreaming?: boolean;
 };
 
-export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessageProps) {
+export function ChatMessage({ message, isUser, isPartner, isAi, isStreaming = false }: ChatMessageProps) {
   let avatarContent;
   
   if (isAi) {
@@ -36,7 +37,6 @@ export function ChatMessage({ message, isUser, isPartner, isAi }: ChatMessagePro
   
   // Format message content with paragraphs, handling streaming content
   const isThinking = message.content === "Thinking..." || message.content === "...";
-  const isStreaming = message.content.length > 0 && !isThinking && message.content.length < 50; // Assume streaming if short but not thinking
   
   const formattedContent = message.content.split('\n').map((paragraph, index) => (
     paragraph ? (
