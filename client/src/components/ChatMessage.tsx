@@ -65,18 +65,25 @@ export function ChatMessage({ message, isUser, isPartner, isAi, isStreaming = fa
     );
   }
   
-  // AI or partner message (left-aligned, full width container but content is limited)
+  // AI or partner message (left-aligned, full width content)
   const senderName = isAi ? "AI Therapist" : (message.sender?.name || "Partner");
   
   return (
-    <div className="px-4 py-6 md:px-6 lg:px-8 flex">
-      <div className="mr-4 flex-shrink-0 mt-1">
-        {avatarContent}
-      </div>
-      
-      <div className="max-w-[85%] md:max-w-[80%]">
-        <div className="text-sm font-medium mb-1">{senderName}</div>
-        <div className="space-y-1">
+    <div className="px-4 py-6 md:px-6 lg:px-8">
+      <div className="w-full">
+        <div className="flex items-center mb-2">
+          {isAi ? (
+            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mr-2">
+              <Brain className="h-3 w-3" />
+            </div>
+          ) : (
+            <div className="mr-2 flex-shrink-0">
+              {avatarContent}
+            </div>
+          )}
+          <div className="text-sm font-medium">{senderName}</div>
+        </div>
+        <div className="space-y-1 w-full">
           {formattedContent}
         </div>
       </div>
