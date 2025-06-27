@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "./queryClient";
+import type { User } from "@shared/schema";
 
 type Theme = "light" | "dark" | "system";
 
@@ -35,10 +36,30 @@ export function ThemeProvider({
   const [initialized, setInitialized] = useState(false);
 
   // Fetch user data to get theme preference
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
+
+  // Initialize theme from user preference or fallback to localStorage
+  useEffect(() => {
+    if (!initialized) {
+      let initialTheme: Theme = defaultTheme;
+      
+      if (user && user.themePreference) {
+        initialTheme = user.themePreference as Theme;
+      } else {
+        // Fallback to localStorage for unauthenticated users
+        const stored = localStorage.getItem(storageKey) as Theme;
+        if (stored) {
+          initialTheme = stored;
+        }
+      }
+      
+      setTheme(initialTheme);
+      setInitialized(true);
+    }
+  }, [user, initialized, defaultTheme, storageKey]);
 
   // Handle system preference changes
   useEffect(() => {
@@ -77,9 +98,19 @@ export function ThemeProvider({
   const value = {
     theme,
     resolvedTheme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    setTheme: async (newTheme: Theme) => {
+      setTheme(newTheme);
+      localStorage.setItem(storageKey, newTheme);
+      
+      // Save to server if user is authenticated
+      if (user && user.id) {
+        try {
+          await apiRequest("PATCH", "/api/auth/user/theme", { theme: newTheme });
+        } catch (error) {
+          console.error("Failed to save theme preference to server:", error);
+          // Theme still works locally, so we don't need to revert
+        }
+      }
     },
   };
 
