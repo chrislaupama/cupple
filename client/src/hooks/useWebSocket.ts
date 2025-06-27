@@ -72,7 +72,13 @@ export function useWebSocket({
         // Handle title updates specifically
         if (data.type === "title_update" && data.sessionId && data.title) {
           console.log("WebSocket received title update:", data);
-          onTitleUpdateRef.current?.(data.sessionId, data.title);
+          console.log("onTitleUpdateRef.current exists:", !!onTitleUpdateRef.current);
+          if (onTitleUpdateRef.current) {
+            console.log("Calling onTitleUpdate callback");
+            onTitleUpdateRef.current(data.sessionId, data.title);
+          } else {
+            console.log("onTitleUpdateRef.current is null/undefined");
+          }
         } else {
           onMessageRef.current?.(data);
         }
