@@ -29,6 +29,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/auth/user/theme', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { theme } = req.body;
+      
+      if (!theme || !['light', 'dark', 'system'].includes(theme)) {
+        return res.status(400).json({ message: "Invalid theme preference" });
+      }
+      
+      const user = await storage.updateUserThemePreference(userId, theme);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating theme preference:", error);
+      res.status(500).json({ message: "Failed to update theme preference" });
+    }
+  });
+
   // Therapy session routes
   app.get('/api/sessions', isAuthenticated, async (req: any, res) => {
     try {

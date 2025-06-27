@@ -20,6 +20,7 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserThemePreference(userId: string, theme: string): Promise<User>;
 
   // Therapy Session operations
   getTherapySession(id: number): Promise<TherapySession | undefined>;
@@ -59,6 +60,18 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         },
       })
+      .returning();
+    return user;
+  }
+
+  async updateUserThemePreference(userId: string, theme: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        themePreference: theme,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }
