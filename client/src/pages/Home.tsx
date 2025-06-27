@@ -1,15 +1,13 @@
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { Header } from "@/components/Header";
 import { EmptyStateCard } from "@/components/EmptyStateCard";
 import { ChatContainer } from "@/components/ChatContainer";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -49,42 +47,7 @@ export default function Home() {
     enabled: !!sessionId && isAuthenticated
   });
   
-  // Create stable callback for title updates
-  const handleTitleUpdate = useCallback((updatedSessionId: number, newTitle: string) => {
-    console.log(`Processing title update for session ${updatedSessionId}: ${newTitle}`);
-    
-    // Update the sessions list cache
-    queryClient.setQueryData(["/api/sessions"], (oldSessions: any) => {
-      console.log("Updating sessions cache, current sessions:", oldSessions);
-      if (!Array.isArray(oldSessions)) return oldSessions;
-      
-      const updated = oldSessions.map(session => 
-        session.id === updatedSessionId 
-          ? { ...session, title: newTitle }
-          : session
-      );
-      console.log("Updated sessions cache:", updated);
-      return updated;
-    });
-    
-    // Update individual session cache if it's the current session
-    queryClient.setQueryData(["/api/sessions", updatedSessionId], (oldSession: any) => {
-      if (!oldSession) return oldSession;
-      console.log(`Updating individual session cache for ${updatedSessionId}:`, oldSession, "->", { ...oldSession, title: newTitle });
-      return { ...oldSession, title: newTitle };
-    });
-    
-    // Invalidate queries to force refresh
-    queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
-    
-    console.log(`Title updated for session ${updatedSessionId}: ${newTitle}`);
-  }, []);
 
-  // Setup WebSocket connection for real-time updates
-  useWebSocket({
-    userId: isAuthenticated && user ? String((user as any).id) : "",
-    onTitleUpdate: handleTitleUpdate
-  });
   
   // Redirect to welcome page if not authenticated
   useEffect(() => {

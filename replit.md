@@ -113,6 +113,7 @@ Changelog:
 - June 26, 2025. Implemented real-time text streaming for AI responses with visual indicators
 - June 26, 2025. Added automatic session title generation with streaming and WebSocket broadcasting
 - June 27, 2025. Fixed UI reactivity for automatic title updates - sessions now update in real-time
+- June 27, 2025. Implemented global WebSocket provider to ensure title updates work across all pages
 ```
 
 ## User Preferences
