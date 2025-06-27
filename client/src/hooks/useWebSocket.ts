@@ -57,6 +57,7 @@ export function useWebSocket({
         
         // Handle title updates specifically
         if (data.type === "title_update" && data.sessionId && data.title) {
+          console.log("WebSocket received title update:", data);
           onTitleUpdate?.(data.sessionId, data.title);
         } else {
           onMessage?.(data);
