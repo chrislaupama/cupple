@@ -46,6 +46,7 @@ export function useWebSocket({
     onConnectedRef.current = onConnected;
     onDisconnectedRef.current = onDisconnected;
     onTitleUpdateRef.current = onTitleUpdate;
+    console.log("WebSocket refs updated, onTitleUpdate exists:", !!onTitleUpdate);
   });
 
   useEffect(() => {
@@ -72,12 +73,41 @@ export function useWebSocket({
         // Handle title updates specifically
         if (data.type === "title_update" && data.sessionId && data.title) {
           console.log("WebSocket received title update:", data);
+          
+          // Directly update React Query cache - bypass callbacks entirely
+          import("@/lib/queryClient").then(({ queryClient }) => {
+            console.log("Directly updating React Query cache for session", data.sessionId, "with title:", data.title);
+            
+            // Update sessions list cache
+            queryClient.setQueryData(["/api/sessions"], (oldSessions: any) => {
+              if (!Array.isArray(oldSessions)) return oldSessions;
+              
+              const updated = oldSessions.map(session => 
+                session.id === data.sessionId 
+                  ? { ...session, title: data.title }
+                  : session
+              );
+              console.log("Updated sessions cache directly:", updated.find(s => s.id === data.sessionId));
+              return updated;
+            });
+            
+            // Update individual session cache
+            queryClient.setQueryData(["/api/sessions", data.sessionId], (oldSession: any) => {
+              if (!oldSession) return oldSession;
+              return { ...oldSession, title: data.title };
+            });
+            
+            // Force UI refresh
+            queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+          });
+          
+          // Also try the callback as fallback
           console.log("onTitleUpdateRef.current exists:", !!onTitleUpdateRef.current);
           if (onTitleUpdateRef.current) {
             console.log("Calling onTitleUpdate callback");
             onTitleUpdateRef.current(data.sessionId, data.title);
           } else {
-            console.log("onTitleUpdateRef.current is null/undefined");
+            console.log("onTitleUpdateRef.current is null/undefined - using direct cache update");
           }
         } else {
           onMessageRef.current?.(data);
