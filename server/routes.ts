@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
 import { getSimpleTherapyResponse, generateSessionTitle } from "./openai";
+import { broadcastTitleUpdate } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
@@ -335,7 +336,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (newTitle && newTitle !== session.title) {
           await storage.updateSessionTitle(sessionId, newTitle);
-          console.log(`Updated session ${sessionId} title to: "${newTitle}"`);
+          console.log(`Updated session ${sessionId} title to: ${newTitle}`);
+          
+          // Broadcast title update to connected clients
+          broadcastTitleUpdate(sessionId, newTitle, session.creatorId);
+          if (session.partnerId) {
+            broadcastTitleUpdate(sessionId, newTitle, session.partnerId);
+          }
         }
       }
     } catch (error) {

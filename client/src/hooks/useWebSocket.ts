@@ -10,6 +10,8 @@ export type MessageData = {
   fullContent?: string;
   // Stream complete notification
   sessionId?: number;
+  // Title update fields
+  title?: string;
 };
 
 type UseWebSocketOptions = {
@@ -18,41 +20,75 @@ type UseWebSocketOptions = {
   onConnected?: () => void;
   onDisconnected?: () => void;
   onError?: (error: any) => void;
+  onTitleUpdate?: (sessionId: number, title: string) => void;
 };
 
-// Simplified implementation that doesn't depend on actual WebSockets
-// but maintains the same interface for compatibility
+// Real WebSocket implementation with title update support
 export function useWebSocket({
   userId,
   onMessage,
   onConnected,
   onDisconnected,
+  onTitleUpdate,
 }: UseWebSocketOptions) {
-  const [isConnected, setIsConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const [ws, setWs] = useState<WebSocket | null>(null);
 
-  // Simulate connection on mount
   useEffect(() => {
     if (!userId) return;
     
-    console.log("Simulating connection for user:", userId);
-    setIsConnected(true);
+    // Create WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws?userId=${userId}`;
     
-    // Call the onConnected callback
-    if (onConnected) {
-      setTimeout(() => onConnected(), 100);
-    }
-    
-    return () => {
-      console.log("Disconnecting simulation for user:", userId);
-      setIsConnected(false);
-      if (onDisconnected) onDisconnected();
-    };
-  }, [userId, onConnected, onDisconnected]);
+    console.log("Connecting WebSocket for user:", userId);
+    const websocket = new WebSocket(wsUrl);
 
-  // Provide a no-op sendMessage function that logs but doesn't do anything
+    websocket.onopen = () => {
+      console.log("WebSocket connected");
+      setIsConnected(true);
+      setWs(websocket);
+      onConnected?.();
+    };
+
+    websocket.onmessage = (event) => {
+      try {
+        const data: MessageData = JSON.parse(event.data);
+        
+        // Handle title updates specifically
+        if (data.type === "title_update" && data.sessionId && data.title) {
+          onTitleUpdate?.(data.sessionId, data.title);
+        } else {
+          onMessage?.(data);
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+
+    websocket.onclose = () => {
+      console.log("WebSocket disconnected");
+      setIsConnected(false);
+      setWs(null);
+      onDisconnected?.();
+    };
+
+    websocket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    // Cleanup on unmount
+    return () => {
+      websocket.close();
+    };
+  }, [userId]);
+
   const sendMessage = (data: any) => {
-    console.log("Would send message (simulation):", data);
-    return true;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+      return true;
+    }
+    return false;
   };
 
   return { isConnected, sendMessage };

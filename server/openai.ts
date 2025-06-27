@@ -53,7 +53,12 @@ Based on the user's message and the therapist's response, generate an appropriat
       max_tokens: 20,
     });
 
-    const title = response.choices[0]?.message?.content?.trim();
+    let title = response.choices[0]?.message?.content?.trim();
+    
+    // Remove quotes if present
+    if (title) {
+      title = title.replace(/^["']|["']$/g, '');
+    }
     
     // Validate the title length and content
     if (title && title.length <= 50 && title.split(' ').length <= 6) {

@@ -17,6 +17,18 @@ type MessageData = {
 // Store active connections
 const clients = new Map<string, WebSocket>();
 
+// Function to broadcast title updates to connected clients
+export function broadcastTitleUpdate(sessionId: number, newTitle: string, userId: string) {
+  const client = clients.get(userId);
+  if (client && client.readyState === WebSocket.OPEN) {
+    client.send(JSON.stringify({
+      type: "title_update",
+      sessionId: sessionId,
+      title: newTitle
+    }));
+  }
+}
+
 export function setupWebSocketServer(server: Server) {
   const wss = new WebSocketServer({ server, path: "/ws" });
 
