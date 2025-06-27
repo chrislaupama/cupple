@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { Header } from "@/components/Header";
 import { EmptyStateCard } from "@/components/EmptyStateCard";
 import { ChatContainer } from "@/components/ChatContainer";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -45,6 +47,31 @@ export default function Home() {
       return response.json();
     },
     enabled: !!sessionId && isAuthenticated
+  });
+  
+  // Setup WebSocket connection for real-time updates
+  useWebSocket({
+    userId: isAuthenticated && user ? String((user as any).id) : "",
+    onTitleUpdate: (updatedSessionId: number, newTitle: string) => {
+      // Update the sessions list cache
+      queryClient.setQueryData(["/api/sessions"], (oldSessions: any) => {
+        if (!Array.isArray(oldSessions)) return oldSessions;
+        
+        return oldSessions.map(session => 
+          session.id === updatedSessionId 
+            ? { ...session, title: newTitle }
+            : session
+        );
+      });
+      
+      // Update individual session cache if it's the current session
+      queryClient.setQueryData(["/api/sessions", updatedSessionId], (oldSession: any) => {
+        if (!oldSession) return oldSession;
+        return { ...oldSession, title: newTitle };
+      });
+      
+      console.log(`Title updated for session ${updatedSessionId}: ${newTitle}`);
+    }
   });
   
   // Redirect to welcome page if not authenticated

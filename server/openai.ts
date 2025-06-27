@@ -8,6 +8,98 @@ const openai = new OpenAI({
  * Get therapy response with streaming support
  */
 /**
+ * Generate a concise session title with streaming support
+ */
+export async function generateSessionTitleStream(
+  userMessage: string,
+  aiResponse: string,
+  therapyType: string,
+  onChunk?: (chunk: string) => void
+): Promise<string> {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      // Return a simple fallback based on message content
+      const topic = userMessage.toLowerCase();
+      let fallbackTitle = "";
+      if (topic.includes('relationship') || topic.includes('partner')) {
+        fallbackTitle = therapyType === 'couples' ? 'Relationship Discussion' : 'Personal Relationship';
+      } else if (topic.includes('anxiety') || topic.includes('stress')) {
+        fallbackTitle = 'Anxiety Support';
+      } else if (topic.includes('depression') || topic.includes('sad')) {
+        fallbackTitle = 'Emotional Support';
+      } else {
+        fallbackTitle = therapyType === 'couples' ? 'Cupple Session' : 'Personal Session';
+      }
+      
+      // Simulate streaming for fallback
+      if (onChunk) {
+        for (const char of fallbackTitle) {
+          onChunk(char);
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      return fallbackTitle;
+    }
+
+    const systemPrompt = `You are a session title generator for therapy conversations. Your task is to create a short, descriptive title (3-6 words) that captures the main topic or concern discussed.
+
+GUIDELINES:
+- Keep titles between 3-6 words maximum
+- Focus on the main concern or topic
+- Use professional, neutral language
+- Avoid overly clinical or diagnostic terms
+- Make it meaningful but not too specific
+- Examples: "Communication Issues", "Work Stress Management", "Trust and Intimacy", "Self-Esteem Building"
+
+Based on the user's message and the therapist's response, generate an appropriate session title.`;
+
+    const stream = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `User message: "${userMessage.substring(0, 200)}"\n\nTherapist response: "${aiResponse.substring(0, 200)}"` },
+      ],
+      temperature: 0.3,
+      max_tokens: 20,
+      stream: true,
+    });
+
+    let fullTitle = '';
+
+    try {
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          fullTitle += content;
+          if (typeof onChunk === 'function') {
+            onChunk(content);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error processing title stream:", error);
+      throw error;
+    }
+
+    // Remove quotes if present
+    fullTitle = fullTitle.trim().replace(/^["']|["']$/g, '');
+    
+    // Validate the title length and content
+    if (fullTitle && fullTitle.length <= 50 && fullTitle.split(' ').length <= 6) {
+      return fullTitle;
+    }
+    
+    // Fallback if generation fails
+    return therapyType === 'couples' ? 'Cupple Session' : 'Personal Session';
+    
+  } catch (error) {
+    console.error("Error generating session title:", error);
+    // Return default title on error
+    return therapyType === 'couples' ? 'Cupple Session' : 'Personal Session';
+  }
+}
+
+/**
  * Generate a concise session title based on the user's initial message and AI response
  */
 export async function generateSessionTitle(

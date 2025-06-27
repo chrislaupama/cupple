@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupWebSocketServer } from "./websocket";
 import { eq } from "drizzle-orm";
-import { getSimpleTherapyResponse, generateSessionTitle } from "./openai";
+import { getSimpleTherapyResponse, generateSessionTitle, generateSessionTitleStream } from "./openai";
 import { broadcastTitleUpdate } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -331,17 +331,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (aiMessageCount <= 2) { // Only for the first or second AI response
         console.log(`Generating title for session ${sessionId} based on early conversation`);
         
-        // Generate the title
-        const newTitle = await generateSessionTitle(userMessage, aiResponse, sessionType);
+        // Initialize streaming title variables
+        let accumulatedTitle = "";
         
-        if (newTitle && newTitle !== session.title) {
-          await storage.updateSessionTitle(sessionId, newTitle);
-          console.log(`Updated session ${sessionId} title to: ${newTitle}`);
+        // Generate the title with streaming support
+        const finalTitle = await generateSessionTitleStream(userMessage, aiResponse, sessionType, (chunk: string) => {
+          // Accumulate title as it streams
+          accumulatedTitle += chunk;
           
-          // Broadcast title update to connected clients
-          broadcastTitleUpdate(sessionId, newTitle, session.creatorId);
+          // Broadcast each chunk of the title to connected clients
+          broadcastTitleUpdate(sessionId, accumulatedTitle, session.creatorId);
           if (session.partnerId) {
-            broadcastTitleUpdate(sessionId, newTitle, session.partnerId);
+            broadcastTitleUpdate(sessionId, accumulatedTitle, session.partnerId);
+          }
+        });
+        
+        // Final title update to database and clients
+        if (finalTitle && finalTitle !== session.title) {
+          await storage.updateSessionTitle(sessionId, finalTitle);
+          console.log(`Updated session ${sessionId} title to: ${finalTitle}`);
+          
+          // Send final complete title update
+          broadcastTitleUpdate(sessionId, finalTitle, session.creatorId);
+          if (session.partnerId) {
+            broadcastTitleUpdate(sessionId, finalTitle, session.partnerId);
           }
         }
       }

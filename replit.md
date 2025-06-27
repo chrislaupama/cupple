@@ -50,10 +50,12 @@ The application uses a PostgreSQL database with the following key tables:
 
 ### AI Integration
 - **Provider**: OpenAI API
-- **Models**: GPT for therapy responses
+- **Models**: GPT-4 for therapy responses, GPT-3.5 Turbo for title generation
 - **Streaming**: Real-time text streaming with character-by-character display
 - **Context**: Different system prompts for couples vs personal therapy
 - **Visual Effects**: Typing indicators and blinking cursor during streaming
+- **Auto Titles**: Intelligent session title generation based on conversation topics
+- **Title Streaming**: Real-time title updates via WebSocket for immediate UI feedback
 
 ## Data Flow
 
