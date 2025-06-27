@@ -86,7 +86,7 @@ export function Sidebar() {
   };
 
   return (
-    <nav className="hidden md:block w-64 border-r p-4 overflow-y-auto bg-background">
+    <nav className="h-full border-r p-4 overflow-y-auto bg-background">
       
       {/* Personal Sessions Section */}
       <div className="mb-6">
@@ -112,7 +112,7 @@ export function Sidebar() {
                 <Button
                   key={session.id}
                   variant="ghost"
-                  className="w-full justify-start"
+                  className="w-full justify-start h-auto py-2 px-3"
                   onClick={() => navigate(`/session/${session.id}`)}
                   onMouseEnter={() => {
                     // Prefetch session data on hover for faster navigation
@@ -120,10 +120,14 @@ export function Sidebar() {
                     queryClient.prefetchQuery({ queryKey: [`/api/sessions/${session.id}/messages`] });
                   }}
                 >
-                  <User className="mr-2 h-4 w-4" />
-                  <div className="flex flex-col items-start">
-                    <span className="block">{session.title}</span>
-                    <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
+                  <User className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <div className="flex flex-col items-start min-w-0 flex-1">
+                    <span className="block truncate w-full text-left font-medium" title={session.title}>
+                      {session.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(session.updatedAt)}
+                    </span>
                   </div>
                 </Button>
               )) : null}
@@ -159,7 +163,7 @@ export function Sidebar() {
                 <Button
                   key={session.id}
                   variant="ghost"
-                  className="w-full justify-start"
+                  className="w-full justify-start h-auto py-2 px-3"
                   onClick={() => navigate(`/session/${session.id}`)}
                   onMouseEnter={() => {
                     // Prefetch session data on hover for faster navigation
@@ -167,10 +171,14 @@ export function Sidebar() {
                     queryClient.prefetchQuery({ queryKey: [`/api/sessions/${session.id}/messages`] });
                   }}
                 >
-                  <Users className="mr-2 h-4 w-4" />
-                  <div className="flex flex-col items-start">
-                    <span className="block">{session.title}</span>
-                    <span className="text-xs text-muted-foreground">{formatDate(session.updatedAt)}</span>
+                  <Users className="mr-2 h-4 w-4 flex-shrink-0" />
+                  <div className="flex flex-col items-start min-w-0 flex-1">
+                    <span className="block truncate w-full text-left font-medium" title={session.title}>
+                      {session.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(session.updatedAt)}
+                    </span>
                   </div>
                 </Button>
               )) : null}
@@ -187,18 +195,18 @@ export function Sidebar() {
         <Link href="/settings">
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className="w-full justify-start px-3"
           >
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+            <Settings className="mr-2 h-4 w-4 flex-shrink-0" />
+            <span className="truncate">Settings</span>
           </Button>
         </Link>
         <Button
           variant="ghost"
-          className="w-full justify-start"
+          className="w-full justify-start px-3"
         >
-          <HelpCircle className="mr-2 h-4 w-4" />
-          <span>Help & Support</span>
+          <HelpCircle className="mr-2 h-4 w-4 flex-shrink-0" />
+          <span className="truncate">Help & Support</span>
         </Button>
       </div>
     </nav>

@@ -8,6 +8,7 @@ import { Header } from "@/components/Header";
 import { EmptyStateCard } from "@/components/EmptyStateCard";
 import { ChatContainer } from "@/components/ChatContainer";
 import { useToast } from "@/hooks/use-toast";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -104,17 +105,28 @@ export default function Home() {
       <div className="flex flex-col h-screen">
         <Header />
         
-        <div className="flex-1 flex overflow-hidden">
-          <Sidebar />
+        <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+          <ResizablePanel 
+            defaultSize={20} 
+            minSize={15} 
+            maxSize={40}
+            className="hidden md:block"
+          >
+            <Sidebar />
+          </ResizablePanel>
           
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <ChatContainer 
-              sessionId={sessionId} 
-              userId={(user as any)?.id || ""} 
-              chatType={session.type as "couples" | "private"} 
-            />
-          </div>
-        </div>
+          <ResizableHandle withHandle className="hidden md:flex" />
+          
+          <ResizablePanel defaultSize={80} minSize={60}>
+            <div className="h-full flex flex-col overflow-hidden">
+              <ChatContainer 
+                sessionId={sessionId} 
+                userId={(user as any)?.id || ""} 
+                chatType={session.type as "couples" | "private"} 
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
         
         <MobileNav />
       </div>
@@ -127,15 +139,26 @@ export default function Home() {
       <div className="flex flex-col h-screen">
         <Header />
         
-        <div className="flex-1 flex overflow-hidden">
-          <Sidebar />
+        <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+          <ResizablePanel 
+            defaultSize={20} 
+            minSize={15} 
+            maxSize={40}
+            className="hidden md:block"
+          >
+            <Sidebar />
+          </ResizablePanel>
           
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 flex justify-center items-center">
-              <div className="w-8 h-8 border-4 border-foreground/30 border-t-transparent rounded-full animate-spin"></div>
+          <ResizableHandle withHandle className="hidden md:flex" />
+          
+          <ResizablePanel defaultSize={80} minSize={60}>
+            <div className="h-full flex flex-col overflow-hidden">
+              <div className="flex-1 flex justify-center items-center">
+                <div className="w-8 h-8 border-4 border-foreground/30 border-t-transparent rounded-full animate-spin"></div>
+              </div>
             </div>
-          </div>
-        </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
         
         <MobileNav />
       </div>
@@ -150,43 +173,54 @@ export default function Home() {
       <div className="flex flex-col h-screen">
         <Header />
         
-        <div className="flex-1 flex overflow-hidden">
-          <Sidebar />
+        <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+          <ResizablePanel 
+            defaultSize={20} 
+            minSize={15} 
+            maxSize={40}
+            className="hidden md:block"
+          >
+            <Sidebar />
+          </ResizablePanel>
           
-          <div className="flex-1 flex flex-col overflow-hidden p-4">
-            <h2 className="text-2xl font-semibold mb-4">
-              {isCouplePage ? "Couples" : "Private"} Sessions
-            </h2>
-            
-            {filteredSessions.length > 0 ? (
-              <div className="grid gap-3">
-                {filteredSessions.map(session => (
-                  <a 
-                    key={session.id} 
-                    href={`/session/${session.id}`}
-                    className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <h3 className="font-medium">{session.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(session.updatedAt).toLocaleDateString()}
-                    </p>
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>No {sessionType} sessions yet</p>
-              </div>
-            )}
-            
-            <button
-              onClick={() => handleCreateSession(sessionType as "couples" | "private")}
-              className="mt-auto w-full flex items-center justify-center gap-2 p-3 rounded-md bg-primary text-primary-foreground"
-            >
-              <span>New {sessionType} Session</span>
-            </button>
-          </div>
-        </div>
+          <ResizableHandle withHandle className="hidden md:flex" />
+          
+          <ResizablePanel defaultSize={80} minSize={60}>
+            <div className="h-full flex flex-col overflow-hidden p-4">
+              <h2 className="text-2xl font-semibold mb-4">
+                {isCouplePage ? "Couples" : "Private"} Sessions
+              </h2>
+              
+              {filteredSessions.length > 0 ? (
+                <div className="grid gap-3">
+                  {filteredSessions.map(session => (
+                    <a 
+                      key={session.id} 
+                      href={`/session/${session.id}`}
+                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <h3 className="font-medium">{session.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(session.updatedAt).toLocaleDateString()}
+                      </p>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No {sessionType} sessions yet</p>
+                </div>
+              )}
+              
+              <button
+                onClick={() => handleCreateSession(sessionType as "couples" | "private")}
+                className="mt-auto w-full flex items-center justify-center gap-2 p-3 rounded-md bg-primary text-primary-foreground"
+              >
+                <span>New {sessionType} Session</span>
+              </button>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
         
         <MobileNav />
       </div>
@@ -198,13 +232,24 @@ export default function Home() {
     <div className="flex flex-col h-screen">
       <Header />
       
-      <div className="flex-1 flex overflow-hidden">
-        <Sidebar />
+      <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+        <ResizablePanel 
+          defaultSize={20} 
+          minSize={15} 
+          maxSize={40}
+          className="hidden md:block"
+        >
+          <Sidebar />
+        </ResizablePanel>
         
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <EmptyStateCard />
-        </div>
-      </div>
+        <ResizableHandle withHandle className="hidden md:flex" />
+        
+        <ResizablePanel defaultSize={80} minSize={60}>
+          <div className="h-full flex flex-col overflow-hidden">
+            <EmptyStateCard />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
       
       <MobileNav />
     </div>
