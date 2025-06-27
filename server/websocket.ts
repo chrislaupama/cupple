@@ -40,11 +40,12 @@ export function setupWebSocketServer(server: Server) {
   const wss = new WebSocketServer({ server, path: "/ws" });
 
   wss.on("connection", (ws, req) => {
-    const userId = req.url?.split("?userId=")[1];
+    const url = req.url;
+    const userId = url?.includes("?userId=") ? url.split("?userId=")[1]?.split("&")[0] : null;
 
     console.log(`WebSocket connection attempt with userId: ${userId}`);
 
-    if (!userId) {
+    if (!userId || userId.trim() === "") {
       console.log("WebSocket connection closed: No user ID provided");
       ws.close(1008, "User ID required");
       return;
@@ -121,15 +122,14 @@ export function setupWebSocketServer(server: Server) {
             content: ""
           });
 
-          // Get recipients for streaming
-          messageRecipients.forEach(recipientId => {
-            const client = clients.get(recipientId);
-
-            // Generate AI response with streaming for each client
-            getSimpleTherapyResponse(
-              message.content,
-              session.type,
-              (chunk: string) => {
+          // Generate AI response once and broadcast to all recipients
+          getSimpleTherapyResponse(
+            message.content,
+            session.type,
+            (chunk: string) => {
+              // Broadcast chunk to all connected recipients
+              messageRecipients.forEach(recipientId => {
+                const client = clients.get(recipientId);
                 if (client && client.readyState === WebSocket.OPEN) {
                   client.send(JSON.stringify({
                     type: "stream",
@@ -137,12 +137,15 @@ export function setupWebSocketServer(server: Server) {
                     content: chunk
                   }));
                 }
-              }
-            ).then(async (fullResponse: string) => {
-              // Update message in database with full content
-              await storage.updateMessage(aiMessage.id, fullResponse);
-              
-              // Send stream complete notification
+              });
+            }
+          ).then(async (fullResponse: string) => {
+            // Update message in database with full content
+            await storage.updateMessage(aiMessage.id, fullResponse);
+            
+            // Send stream complete notification to all recipients
+            messageRecipients.forEach(recipientId => {
+              const client = clients.get(recipientId);
               if (client && client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify({
                   type: "stream_complete",
@@ -151,8 +154,12 @@ export function setupWebSocketServer(server: Server) {
                   fullContent: fullResponse
                 }));
               }
-            }).catch((error: unknown) => {
-              console.error("Error in AI response:", error);
+            });
+          }).catch((error: unknown) => {
+            console.error("Error in AI response:", error);
+            // Send error to all recipients
+            messageRecipients.forEach(recipientId => {
+              const client = clients.get(recipientId);
               if (client && client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify({
                   type: "error",

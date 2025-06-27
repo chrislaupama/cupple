@@ -29,7 +29,7 @@ export default function PrivateTherapy({ userId }: PersonalTherapyProps) {
         title: "Personal Session",
         type: "private"
       });
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });

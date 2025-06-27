@@ -97,8 +97,7 @@ export function useWebSocket({
               return { ...oldSession, title: data.title };
             });
             
-            // Force UI refresh
-            queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
+            // No need to invalidate - direct cache update should trigger re-render
           });
           
           // Also try the callback as fallback
