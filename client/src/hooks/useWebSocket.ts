@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export type MessageData = {
   type: string;
@@ -34,6 +34,20 @@ export function useWebSocket({
   const [isConnected, setIsConnected] = useState(false);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
+  // Use refs to store latest callback functions to avoid reconnecting WebSocket
+  const onMessageRef = useRef(onMessage);
+  const onConnectedRef = useRef(onConnected);
+  const onDisconnectedRef = useRef(onDisconnected);
+  const onTitleUpdateRef = useRef(onTitleUpdate);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onConnectedRef.current = onConnected;
+    onDisconnectedRef.current = onDisconnected;
+    onTitleUpdateRef.current = onTitleUpdate;
+  });
+
   useEffect(() => {
     if (!userId) return;
     
@@ -48,7 +62,7 @@ export function useWebSocket({
       console.log("WebSocket connected");
       setIsConnected(true);
       setWs(websocket);
-      onConnected?.();
+      onConnectedRef.current?.();
     };
 
     websocket.onmessage = (event) => {
@@ -58,9 +72,9 @@ export function useWebSocket({
         // Handle title updates specifically
         if (data.type === "title_update" && data.sessionId && data.title) {
           console.log("WebSocket received title update:", data);
-          onTitleUpdate?.(data.sessionId, data.title);
+          onTitleUpdateRef.current?.(data.sessionId, data.title);
         } else {
-          onMessage?.(data);
+          onMessageRef.current?.(data);
         }
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
@@ -71,7 +85,7 @@ export function useWebSocket({
       console.log("WebSocket disconnected");
       setIsConnected(false);
       setWs(null);
-      onDisconnected?.();
+      onDisconnectedRef.current?.();
     };
 
     websocket.onerror = (error) => {
