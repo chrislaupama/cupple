@@ -299,6 +299,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Test endpoint to manually trigger title update
+  app.post('/api/sessions/:id/test-title', isAuthenticated, async (req: any, res) => {
+    try {
+      const sessionId = parseInt(req.params.id);
+      const { title } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ message: "Title is required" });
+      }
+      
+      const session = await storage.getTherapySession(sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      console.log(`Manual title update test for session ${sessionId} to: ${title}`);
+      
+      // Update in database
+      await storage.updateSessionTitle(sessionId, title);
+      
+      // Test WebSocket broadcast
+      broadcastTitleUpdate(sessionId, title, session.creatorId);
+      if (session.partnerId) {
+        broadcastTitleUpdate(sessionId, title, session.partnerId);
+      }
+      
+      res.json({ success: true, title });
+    } catch (error) {
+      console.error("Error in test title update:", error);
+      res.status(500).json({ message: "Failed to update title" });
+    }
+  });
   
   // Track streaming completion state for messages
   const streamingCompletionMap = new Map<number, boolean>();
@@ -352,8 +385,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Updated session ${sessionId} title to: ${finalTitle}`);
           
           // Send final complete title update
+          console.log(`About to broadcast title update for session ${sessionId} to user ${session.creatorId}`);
           broadcastTitleUpdate(sessionId, finalTitle, session.creatorId);
           if (session.partnerId) {
+            console.log(`About to broadcast title update for session ${sessionId} to partner ${session.partnerId}`);
             broadcastTitleUpdate(sessionId, finalTitle, session.partnerId);
           }
         }

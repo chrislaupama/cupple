@@ -19,8 +19,10 @@ const clients = new Map<string, WebSocket>();
 
 // Function to broadcast title updates to connected clients
 export function broadcastTitleUpdate(sessionId: number, newTitle: string, userId: string) {
-  const client = clients.get(userId);
   console.log(`Broadcasting title update to user ${userId}: "${newTitle}" for session ${sessionId}`);
+  console.log(`Connected clients: ${Array.from(clients.keys()).join(', ')}`);
+  
+  const client = clients.get(userId);
   if (client && client.readyState === WebSocket.OPEN) {
     const message = {
       type: "title_update",
