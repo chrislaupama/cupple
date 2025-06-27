@@ -35,7 +35,7 @@ export function Sidebar() {
         title: `Personal Session ${personalCount}`,
         type: "private",
       });
-      return await response.json();
+      return response;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
@@ -61,7 +61,7 @@ export function Sidebar() {
         title: `Cupple Session ${couplesCount}`,
         type: "couples",
       });
-      return await response.json();
+      return response;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/sessions"] });
