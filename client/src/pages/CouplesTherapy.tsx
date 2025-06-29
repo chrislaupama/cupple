@@ -4,7 +4,7 @@ import { ChatContainer } from "@/components/ChatContainer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useLocation } from "wouter";
 
 type CuppleTherapyProps = {

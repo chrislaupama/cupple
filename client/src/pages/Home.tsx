@@ -7,7 +7,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { Header } from "@/components/Header";
 import { EmptyStateCard } from "@/components/EmptyStateCard";
 import { ChatContainer } from "@/components/ChatContainer";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 export default function Home() {
