@@ -116,6 +116,7 @@ Changelog:
 - June 27, 2025. Implemented global WebSocket provider to ensure title updates work across all pages
 - June 27, 2025. Completed dual cache update system for maximum title update reliability
 - June 27, 2025. Successfully deployed automatic session title generation with real-time streaming
+- June 29, 2025. Standardized naming conventions across all components, hooks, and types
 ```
 
 ## User Preferences

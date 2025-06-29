@@ -7,11 +7,11 @@ import { Lock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useLocation } from "wouter";
 
-type PersonalTherapyProps = {
+type PrivateTherapyProps = {
   userId: string;
 };
 
-export default function PrivateTherapy({ userId }: PersonalTherapyProps) {
+export default function PrivateTherapy({ userId }: PrivateTherapyProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();

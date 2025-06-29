@@ -7,11 +7,11 @@ import { Heart, Plus } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useLocation } from "wouter";
 
-type CuppleTherapyProps = {
+type CouplesTherapyProps = {
   userId: string;
 };
 
-export default function CouplesTherapy({ userId }: CuppleTherapyProps) {
+export default function CouplesTherapy({ userId }: CouplesTherapyProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
