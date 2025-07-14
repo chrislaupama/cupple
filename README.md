@@ -2,10 +2,6 @@
 
 A sophisticated AI-powered communication platform designed to enhance emotional connection between couples through intelligent, real-time messaging and personalized interaction tools. The platform also provides personal therapy sessions for individual users.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)
-![TypeScript](https://img.shields.io/badge/typescript-%5E5.6.3-blue.svg)
-
 ## Features
 
 ### 🤝 Couples Therapy
@@ -233,10 +229,6 @@ The app will be available at your `.replit.app` domain.
 - HTTP-only cookies prevent XSS attacks
 - Environment variables protect sensitive keys
 - AI responses are processed server-side for security
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Changelog
 
